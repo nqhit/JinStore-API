@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 // const orderRoutes = require("./routes/orderRoutes");
 // const paymentRoutes = require("./routes/paymentRoutes");
@@ -36,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Define routes
 app.use("/auth", authRoutes);
+app.use("/user", userRoutes);
 // app.use("/orders", orderRoutes);
 app.use("/products", productRoutes);
 // app.use("/payments", paymentRoutes);

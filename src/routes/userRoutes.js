@@ -1,8 +1,8 @@
-const express = require("express");
-const { register, login } = require("../controllers/userController");
-const router = express.Router();
+const userController = require("../controllers/userController");
+const authMiddleware = require("../middlewares/authMiddleware");
+const router = require("express").Router();
 
-router.post("/register", register);
-router.post("/login", login);
+router.get("/", authMiddleware.verifyToken,userController.getAllUsers);
+router.delete("/:id", authMiddleware.verifyTokenAndAdmin, userController.deleteUser);
 
 module.exports = router;

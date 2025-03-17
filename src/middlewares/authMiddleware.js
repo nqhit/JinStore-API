@@ -1,31 +1,31 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
 
-// Middleware xác thực người dùng qua JWT
-const protect = async (req, res, next) => {
-  let token;
-
-  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
-    try {
-      token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select("-password");
-      next();
-    } catch (error) {
-      res.status(401).json({ message: "Token không hợp lệ" });
+const authMiddleware ={
+  verifyToken: (req, res, next) => {
+    const token = req.headers.token;
+    if(token){
+      const accessToken = token.split(" ")[1];
+      jwt.verify(accessToken,process.env.JWT_SECRET, (err, user) => {
+        if(err) {
+          res.status(403).json("Token is not valid!");
+        }
+        req.user = user;
+        next();
+      })
+    }else{
+      res.status(401).json("You are not authenticated!");
     }
-  } else {
-    res.status(401).json({ message: "Không có token, truy cập bị từ chối" });
-  }
-};
+  },
 
-// Middleware phân quyền Admin
-const admin = (req, res, next) => {
-  if (req.user && req.user.isAdmin) {
-    next();
-  } else {
-    res.status(403).json({ message: "Truy cập bị từ chối, chỉ Admin được phép" });
+  verifyTokenAndAdmin: (req, res, next) => {
+    authMiddleware.verifyToken(req, res, () => {
+      if(req.user.id === req.params.id || req.user.role === "admin"){
+        next();
+      }else{
+        res.status(403).json("You are not allowed to do that!");
+      }
+    })
   }
-};
+}
 
-module.exports = { protect, admin };
+module.exports = authMiddleware;

@@ -25,21 +25,9 @@ const ProductSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
-    rating: {
-      type: Number,
-      default: 0, // Điểm đánh giá trung bình
-    },
-    numReviews: {
-      type: Number,
-      default: 0, // Số lượt đánh giá
-    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
-      required: true,
-    },
-    brand: {
-      type: String,
       required: true,
     },
     images: [
