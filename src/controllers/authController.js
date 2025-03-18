@@ -33,7 +33,7 @@ const authController = {
         role: user.role 
       },
       process.env.JWT_SECRET,
-      { expiresIn: "30s" });
+      { expiresIn: "30d" });
   },
 
 // Tạo refresh token JWT
@@ -118,7 +118,6 @@ const authController = {
       if(user && isMatch){
         const Token = authController.generateToken(user);
         const refreshToken = authController.generateRefreshToken(user);
-        
 
         addRefreshToken(user, refreshToken);
         res.cookie("refreshToken", refreshToken, {
@@ -147,47 +146,46 @@ const authController = {
   },
 
 // lấy request Token
-requestRefreshToken: async (req, res) => {
-  const refreshToken = req.body.refreshToken || req.headers.authorization?.split(" ")[1]; // Nhận từ body hoặc header
-  if (!refreshToken) return res.status(401).json({ message: "Vui lòng đăng nhập" });
+  requestRefreshToken: async (req, res) => {
+    const refreshToken = req.body.refreshToken || req.headers.authorization?.split(" ")[1]; // Nhận từ body hoặc header
+    if (!refreshToken) return res.status(401).json({ message: "Vui lòng đăng nhập" });
 
-  const userId = Object.keys(refreshTokens).find(userId => refreshTokens[userId].includes(refreshToken));
-  if (!userId) return res.status(403).json({ message: "Refresh token không hợp lệ!" });
+    const userId = Object.keys(refreshTokens).find(userId => refreshTokens[userId].includes(refreshToken));
+    if (!userId) return res.status(403).json({ message: "Refresh token không hợp lệ!" });
 
-  jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, user) => {
-      if (err) {
-          console.log(err);
-          return res.status(403).json({ message: "Token hết hạn hoặc không hợp lệ!" });
-      }
+    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, user) => {
+        if (err) {
+            console.log(err);
+            return res.status(403).json({ message: "Token hết hạn hoặc không hợp lệ!" });
+        }
 
-      removeSpecificToken(user, refreshToken);
+        removeSpecificToken(user, refreshToken);
 
-      const newToken = authController.generateToken(user);
-      const newRefreshToken = authController.generateRefreshToken(user);
+        const newToken = authController.generateToken(user);
+        const newRefreshToken = authController.generateRefreshToken(user);
 
-      // Trả về refresh token thay vì set cookie
-      return res.status(200).json({
-          accessToken: newToken,
-          refreshToken: newRefreshToken
-      });
-  });
-},
-
+        // Trả về refresh token thay vì set cookie
+        return res.status(200).json({
+            accessToken: newToken,
+            refreshToken: newRefreshToken
+        });
+    });
+  },
 
 // Logout
-userLogout: async (req, res) => {
-  const refreshToken = req.headers.authorization?.split(" ")[1]; // Lấy token từ header
-  if (!refreshToken) {
-      return res.status(400).json({ message: "Không có refresh token" });
-  }
+  userLogout: async (req, res) => {
+    const refreshToken = req.headers.authorization?.split(" ")[1]; // Lấy token từ header
+    if (!refreshToken) {
+        return res.status(400).json({ message: "Không có refresh token" });
+    }
 
-  const userId = Object.keys(refreshTokens).find(userId => refreshTokens[userId].includes(refreshToken));
-  if (userId) {
-      removeSpecificToken({ _id: userId }, refreshToken);
-  }
+    const userId = Object.keys(refreshTokens).find(userId => refreshTokens[userId].includes(refreshToken));
+    if (userId) {
+        removeSpecificToken({ _id: userId }, refreshToken);
+    }
 
-  return res.status(200).json({ message: "Đăng xuất thành công" });
-}
+    return res.status(200).json({ message: "Đăng xuất thành công" });
+  }
 
 }
 
