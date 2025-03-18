@@ -12,7 +12,7 @@ const UserSchema = new mongoose.Schema({
     district: String,
     ward: String
   },
-  role: { type: String, enum: ["customer", "admin"], default: "customer" }
+  role: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", UserSchema);

@@ -18,14 +18,14 @@ const ProductSchema = new mongoose.Schema(
     },
     discount: {
       type: Number,
-      default: 0, // % giảm giá
+      default: 0,
     },
     stock: {
       type: Number,
       required: true,
       default: 0,
     },
-    category: {
+    idCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       required: true,
