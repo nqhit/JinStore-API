@@ -24,12 +24,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(
-  cors({
-    origin: 'http://localhost:5173', // Hoặc danh sách whitelist
-    credentials: true, // Quan trọng! Cho phép gửi cookie
-  }),
-);
+app.use(cors({ credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
