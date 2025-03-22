@@ -18,7 +18,7 @@ module.exports = {
   // Get product by name
   getProductById: async (req, res) => {
     try {
-      const { id } = req.params; // Lấy id từ query parameters
+      const { id } = req.params;
 
       if (!id) {
         return res.status(400).json({ message: 'Thiếu id sản phẩm' });
@@ -31,6 +31,26 @@ module.exports = {
       }
 
       res.status(200).json(product);
+    } catch (error) {
+      res.status(500).json({ message: 'Lỗi server', error });
+    }
+  },
+
+  getProductsByCategoryId: async (req, res) => {
+    try {
+      const idCategory = req.params.idCategory;
+
+      if (!idCategory) {
+        return res.status(400).json({ message: 'Thiếu id danh mục' });
+      }
+
+      const products = await Product.find(idCategory);
+
+      if (!products || products.length === 0) {
+        return res.status(404).json({ message: 'Không tìm thấy sản phẩm nào trong danh mục này' });
+      }
+
+      res.status(200).json(products);
     } catch (error) {
       res.status(500).json({ message: 'Lỗi server', error });
     }
@@ -60,7 +80,7 @@ module.exports = {
   //Update detail product
   editProduct: async (req, res) => {
     try {
-      const id = req.params.id || req.query.id; // Lấy id từ params hoặc query
+      const id = req.params.id; // Lấy id từ params hoặc query
       const updatedProduct = await Product.findByIdAndUpdate(id, req.body, { new: true }).populate('idCategory');
 
       if (!updatedProduct) {
