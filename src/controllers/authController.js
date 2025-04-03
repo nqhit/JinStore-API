@@ -149,12 +149,12 @@ const authController = {
       if (err) {
         console.log(err);
       }
-      await RefreshToken.deleteOne({ token: refreshToken });
+      await _refreshToken.deleteOne({ token: refreshToken });
 
       const newAccessToken = authController.generateToken(user);
       const newRefreshToken = authController.generateRefreshToken(user);
 
-      await new RefreshToken({ token: newRefreshToken, userId: user._id }).save();
+      await new _refreshToken({ token: newRefreshToken, userId: user._id }).save();
 
       res.cookie('refreshToken', newRefreshToken, {
         httpOnly: true,
@@ -176,22 +176,29 @@ const authController = {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
-      // Nếu bạn lưu refreshToken trong database, hãy xóa nó:
+      // Xóa refreshToken từ database
       await _refreshToken.deleteOne({ userId: id });
 
-      res.cookie('refreshToken', '', {
-        httpOnly: true,
-        secure: false,
-        path: '/',
-        sameSite: 'strict',
-      });
-
-      res.status(200).json({
-        success: true,
-        message: 'Logged out successfully!',
-      });
+      // Xóa cookie và gửi response
+      return res
+        .clearCookie('refreshToken', {
+          httpOnly: true,
+          secure: false,
+          path: '/',
+          sameSite: 'strict',
+        })
+        .status(200)
+        .json({
+          success: true,
+          message: 'Logged out successfully!',
+        });
     } catch (err) {
-      res.status(500).json(err);
+      console.error('Logout error:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Có lỗi khi đăng xuất',
+        error: err.message,
+      });
     }
   },
 };

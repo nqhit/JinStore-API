@@ -19,7 +19,7 @@ module.exports = {
         return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin.' });
       }
 
-      const user = await _users.findOne({ email: email }); // Added 'await' since this is likely a DB query
+      const user = await _users.findOne({ email: email });
       if (!user) {
         return res.status(400).json({ message: 'Người dùng không tồn tại' });
       }
@@ -74,18 +74,22 @@ module.exports = {
 
   verifyOTP: async (req, res) => {
     try {
-      const { userId, otp } = req.body;
-      if (!userId || !otp) {
+      //NOTE: lấy email từ localStorage
+      const { email, otp } = req.body;
+      if (!email || !otp) {
         return res.status(400).json({ message: 'User ID and OTP are required' });
       }
 
-      const verifyOTP = await VerifyOTP.findOne({ user: userId });
+      const user = await _users.findOne({ email: email });
+      console.log(user);
+
+      const verifyOTP = await VerifyOTP.findOne({ user: user._id });
       if (!verifyOTP || verifyOTP.otp !== otp || verifyOTP.otpExpires < new Date()) {
         return res.status(400).json({ message: 'Invalid or expired OTP' });
       }
 
       await VerifyOTP.updateOne(
-        { user: userId },
+        { user: user._id },
         { otp: null, otpExpires: null, isEmailVerified: true, isPhoneVerified: false },
       );
       res.status(200).json({ message: 'OTP verified successfully' });

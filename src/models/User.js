@@ -7,11 +7,18 @@ const UserSchema = new mongoose.Schema(
       required: [true, 'Tên đăng nhập là bắt buộc'],
       unique: true,
       trim: true,
+      lowercase: true,
       minlength: [6, 'Tên đăng nhập phải có ít nhất 6 ký tự'],
+      maxlength: [20, 'Tên đăng nhập không được vượt quá 20 ký tự'], 
+      match: [/^[a-zA-Z0-9_]+$/, 'Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới'], 
     },
     fullname: {
       type: String,
+      required: [true, 'Họ và tên là bắt buộc'],
       trim: true,
+      minlength: [2, 'Họ và tên phải có ít nhất 2 ký tự'], 
+      maxlength: [50, 'Họ và tên không được vượt quá 50 ký tự'], 
+      match: [/^[\p{L}\s]+$/u, 'Họ và tên chỉ được chứa chữ cái và khoảng trắng'], 
     },
     email: {
       type: String,

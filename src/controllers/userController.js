@@ -1,4 +1,8 @@
+const VerifyOTP = require('../models/VerifyOTP');
 const User = require('../models/User');
+
+const bcrypt = require('bcryptjs');
+const validator = require('validator');
 
 module.exports = {
   //NOTE: Get all user
@@ -78,7 +82,44 @@ module.exports = {
 
   //NOTE: Update password
   updatePassword: async (req, res) => {
-    
+    try {
+      const { email, password, confirmPassword } = req.body;
+      if (!email || !password || !confirmPassword) {
+        return res.status(404).json({ message: 'Vui lòng nhập đầy đủ thôn tin' });
+      }
+
+      const user = await User.findOne({ email: email });
+      if (!user) {
+        return res.status(404).json({ message: 'Người dùng không tồn tại' });
+      }
+
+      const verifyOTP = await VerifyOTP.findOne({ user: user._id });
+      if (!verifyOTP || !verifyOTP.isEmailVerified) {
+        return res.status(403).json({ message: 'Vui lòng xác minh email trước' });
+      }
+
+      if (password !== confirmPassword) {
+        return res.status(409).json({ message: 'Mật khẩu xác nhận không khớp' });
+      }
+
+      if (!validator.isStrongPassword(password, { minLength: 8, minLowercase: 1, minUppercase: 1, minNumbers: 1 })) {
+        return res.status(400).json({ message: `Mật khẩu ít nhất 8 ký tự bao gồm chữ thường, in hoa, số` });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newPasswordUser = await User.findByIdAndUpdate(
+        user._id,
+        { password: hashedPassword },
+        { new: true, select: '-password' },
+      );
+
+      await VerifyOTP.deleteOne({ user: user._id });
+
+      res.status(200).json({ success: true, message: 'Cập nhật mật khẩu thành công' });
+    } catch (error) {
+      console.error('Lỗi server:', error);
+      res.status(500).json({ message: 'Lỗi server', error });
+    }
   },
 
   //NOTE: Delete user

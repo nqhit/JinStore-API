@@ -1,11 +1,22 @@
-const userController = require('../controllers/userController');
+const {
+  getAllUsers,
+  getUserInfo,
+  updateUserInfo,
+  updateDeliveryAddress,
+  deleteUser,
+  updatePassword,
+} = require('../controllers/userController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = require('express').Router();
 
-router.get('/', authMiddleware.verifyToken, userController.getAllUsers);
-router.get('/:id', authMiddleware.verifyToken, userController.getUserInfo);
-router.patch('/:id', authMiddleware.verifyToken, userController.updateUserInfo);
-router.patch('/:id', authMiddleware.verifyToken, userController.updateDeliveryAddress);
-router.delete('/:id', authMiddleware.verifyTokenAndAdmin, userController.deleteUser);
+router.get('/', authMiddleware.verifyToken, getAllUsers);
+router.get('/:id', authMiddleware.verifyToken, getUserInfo);
+
+router.patch('/info-user/:id', authMiddleware.verifyToken, updateUserInfo);
+router.patch('/address-user/:id', authMiddleware.verifyToken, updateDeliveryAddress);
+
+router.patch('/reset-password', updatePassword);
+
+router.delete('/:id', authMiddleware.verifyTokenAndAdmin, deleteUser);
 
 module.exports = router;
