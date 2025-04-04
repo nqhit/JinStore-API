@@ -156,15 +156,17 @@ const authController = {
 
       await new _refreshToken({ token: newRefreshToken, userId: user._id }).save();
 
-      res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: false,
-        path: '/',
-        sameSite: 'strict',
-      });
-      res.status(200).json({
-        accessToken: newAccessToken,
-      });
+      return res
+        .cookie('refreshToken', newRefreshToken, {
+          httpOnly: true,
+          secure: false,
+          path: '/',
+          sameSite: 'strict',
+        })
+        .status(200)
+        .json({
+          accessToken: newAccessToken,
+        });
     });
   },
 
@@ -190,7 +192,7 @@ const authController = {
         .status(200)
         .json({
           success: true,
-          message: 'Logged out successfully!',
+          message: 'Đăng xuất thành công!',
         });
     } catch (err) {
       console.error('Logout error:', err);
