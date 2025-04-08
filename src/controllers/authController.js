@@ -11,10 +11,10 @@ const authController = {
     return jwt.sign(
       {
         _id: user._id,
-        role: user.role,
+        isAdmin: user.isAdmin,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30s' },
+      { expiresIn: '30d' },
     );
   },
 
@@ -23,7 +23,7 @@ const authController = {
     return jwt.sign(
       {
         _id: user._id,
-        role: user.role,
+        isAdmin: user.isAdmin,
       },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: '30d' },
@@ -33,7 +33,12 @@ const authController = {
   //NOTE: Đăng ký
   registerUser: async (req, res) => {
     try {
-      const { username, email, password, confirmPassword } = req.body;
+      const { fullname, username, email, password, confirmPassword } = req.body;
+
+      const fullnameRegex = /^[\p{L}\s]+$/u;
+      if (!fullnameRegex.test(fullname)) {
+        return res.status(400).json({ message: 'Tên người dùng không hợp lệ' });
+      }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
@@ -48,7 +53,7 @@ const authController = {
         return res.status(400).json({ message: 'Vui lòng nhập lại xác nhận mật khẩu' });
       }
 
-      if (!username || !email || !password) {
+      if (!fullname || !username || !email || !password) {
         return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin.' });
       }
 
@@ -66,6 +71,7 @@ const authController = {
       const normalizedEmail = email.trim();
 
       const newUser = await new _user({
+        fullname: fullname,
         username: username,
         email: normalizedEmail,
         password: hashedPassword,

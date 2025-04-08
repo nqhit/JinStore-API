@@ -17,7 +17,7 @@ module.exports = {
   //NOTE: Get all category
   getAllCategory: async (req, res) => {
     try {
-      const categories = await Category.find().populate('parentId', 'name slug');
+      const categories = await Category.find();
       res.json(categories);
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -42,7 +42,7 @@ module.exports = {
   //NOTE: Create category
   createCategory: async (req, res) => {
     try {
-      const { name, description, isOutstanding, status, image, parentId } = req.body;
+      const { name, description, image } = req.body;
       const newId = await getNextCategoryId();
 
       if (!name || name.trim() === '') {
@@ -64,10 +64,7 @@ module.exports = {
         _id: newId,
         name: name.trim(),
         description: description || '',
-        isOutstanding: isOutstanding || false,
-        status: status || 'active',
         image: image || null,
-        parentId: parentId || null,
       });
 
       const savedCategory = await newCategory.save();
@@ -89,7 +86,8 @@ module.exports = {
   updateCategory: async (req, res) => {
     try {
       const { name, description, isOutstanding, status, image, parentId } = req.body;
-      const category = await Category.findById(req.params.id);
+      const { id } = req.params;
+      const category = await Category.findOne({ _id: id });
 
       if (!category) {
         return res.status(404).json({ success: false, message: 'Danh mục không tồn tại' });

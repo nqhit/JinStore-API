@@ -19,7 +19,6 @@ const UserSchema = new mongoose.Schema(
       minlength: [2, 'Họ và tên phải có ít nhất 2 ký tự'],
       maxlength: [50, 'Họ và tên không được vượt quá 50 ký tự'],
       match: [/^[\p{L}\s]+$/u, 'Họ và tên chỉ được chứa chữ cái và khoảng trắng'],
-      default: 'Người dùng mới', // Giá trị mặc định nếu không nhập
     },
     email: {
       type: String,
