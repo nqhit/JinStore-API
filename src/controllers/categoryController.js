@@ -42,9 +42,10 @@ module.exports = {
   //NOTE: Create category
   createCategory: async (req, res) => {
     try {
-      const { name, description, image } = req.body;
+      const { name, slug, description, image } = req.body;
       const newId = await getNextCategoryId();
 
+      // Kiểm tra tên danh mục
       if (!name || name.trim() === '') {
         return res.status(400).json({
           success: false,
@@ -52,17 +53,29 @@ module.exports = {
         });
       }
 
-      const existingCategory = await Category.findOne({ name: name.trim() });
+      const trimmedName = name.trim();
+
+      // Kiểm tra danh mục đã tồn tại theo tên (không phân biệt hoa thường)
+      const existingCategory = await Category.findOne({
+        name: { $regex: `^${trimmedName}$`, $options: 'i' },
+      });
       if (existingCategory) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
           message: 'Danh mục này đã tồn tại',
         });
       }
 
+      const checkSlug = await Category.findOne({ slug: slug });
+      if (checkSlug) {
+        return res.status(409).json({ success: false, message: 'Slug đã tồn tại!' });
+      }
+
+      // Tạo danh mục mới
       const newCategory = new Category({
         _id: newId,
-        name: name.trim(),
+        name: trimmedName,
+        slug: slug,
         description: description || '',
         image: image || null,
       });
@@ -85,7 +98,7 @@ module.exports = {
   //NOTE: Update category
   updateCategory: async (req, res) => {
     try {
-      const { name, description, isOutstanding, status, image, parentId } = req.body;
+      const { name, slug, description, isOutstanding, status, image } = req.body;
       const { id } = req.params;
       const category = await Category.findOne({ _id: id });
 
@@ -93,12 +106,34 @@ module.exports = {
         return res.status(404).json({ success: false, message: 'Danh mục không tồn tại' });
       }
 
-      if (name) category.name = name;
+      if (name) {
+        const trimmedName = name.trim();
+        // Kiểm tra danh mục đã tồn tại theo tên (không phân biệt hoa thường)
+        const existingCategory = await Category.findOne({
+          name: { $regex: `^${trimmedName}$`, $options: 'i' },
+        });
+        if (existingCategory && existingCategory._id !== id) {
+          return res.status(409).json({
+            success: false,
+            message: 'Danh mục này đã tồn tại',
+          });
+        }
+      }
+
+      if (slug) {
+        const checkSlug = await Category.findOne({ slug: slug });
+        if (checkSlug && checkSlug._id !== id) {
+          return res.status(409).json({ success: false, message: 'Slug đã tồn tại!' });
+        }
+      }
+
+      // Cập nhật các trường khác
+      if (name) category.name = trimmedName;
+      if (slug) category.slug = slug;
       if (description) category.description = description;
       if (isOutstanding !== undefined) category.isOutstanding = isOutstanding;
       if (status) category.status = status;
       if (image) category.image = image;
-      if (parentId !== undefined) category.parentId = parentId || null;
 
       await category.save();
       res.json({ success: true, data: category });
@@ -110,13 +145,14 @@ module.exports = {
   //NOTE: Delete category
   deleteCategory: async (req, res) => {
     try {
-      const category = await Category.findByIdAndDelete(req.params.id);
-      if (category) {
-        return res.status(404).json({ message: 'Category not found' });
+      const { id } = req.params;
+      const category = await Category.findByIdAndDelete(id);
+      if (!category) {
+        return res.status(404).json({ success: false, message: 'Danh mục không tồn tại' });
       }
-      res.status(200).json({ message: 'Category deleted successfully' });
+      res.status(200).json({ success: true, message: 'Xóa danh mục thành công.' });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ success: false, message: 'Xóa danh mục thất bại!' });
     }
   },
 };
