@@ -4,7 +4,7 @@ const cloudinary = require('cloudinary').v2;
 cloudinary.config({
   cloud_name: 'dfwv6qzrx',
   api_key: '871617722336997',
-  api_secret: 'V8dGM45abZbk6ec6G2Dna79MmsM'
+  api_secret: 'V8dGM45abZbk6ec6G2Dna79MmsM',
 });
 
 /**
@@ -17,7 +17,7 @@ const uploadImage = async (filePath, folder = 'categories') => {
   try {
     const result = await cloudinary.uploader.upload(filePath, {
       folder: folder,
-      resource_type: 'auto'
+      resource_type: 'auto',
     });
     return result;
   } catch (error) {
@@ -43,5 +43,5 @@ const deleteImage = async (publicId) => {
 
 module.exports = {
   uploadImage,
-  deleteImage
-}; 
+  deleteImage,
+};
