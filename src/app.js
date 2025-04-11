@@ -25,7 +25,13 @@ app.use((req, res, next) => {
   next();
 });
 
-const allowedOrigins = ['http://localhost:5173', 'https://nqhit.github.io/JinStore/'];
+// Update allowed origins to include all possible frontend URLs
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://nqhit.github.io/JinStore/',
+  'https://nqhit.github.io',
+];
 
 app.use(
   cors({
@@ -33,6 +39,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log('CORS blocked for origin:', origin);
         callback(new Error('Not allowed by CORS'));
       }
     },

@@ -11,14 +11,27 @@ const connectDB = async () => {
   }
 
   try {
-    await mongoose
-      .connect(DATABASE_URL)
-      .then(() => console.log('MongoDB connected successfully'))
-      .catch((err) => console.error('MongoDB connection error:', err));
+    // Set connection options
+    const options = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+    };
 
+    // Connect to MongoDB
+    await mongoose.connect(DATABASE_URL, options);
     console.log('✅ MongoDB connected successfully');
+
+    // Test the connection by listing collections
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('📚 Available collections:', collections.map((c) => c.name).join(', '));
+
+    // Check if categories collection exists
+    const hasCategories = collections.some((c) => c.name === 'categories');
+    console.log(hasCategories ? '✅ Categories collection exists' : '❌ Categories collection does not exist');
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error);
+    console.error('Error details:', error.message);
     process.exit(1);
   }
 };
