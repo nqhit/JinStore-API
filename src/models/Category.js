@@ -9,7 +9,10 @@ const categorySchema = new mongoose.Schema(
     description: { type: String, default: '' },
     isOutstanding: { type: Boolean, default: false },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
-    image: { type: String, default: '' },
+    image: {
+      url: { type: String, default: '' },
+      publicId: { type: String, default: '' },
+    },
   },
   { timestamps: true }, // Bỏ _id: false vì đã định nghĩa _id thủ công
 );
