@@ -16,7 +16,9 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: 'http://localhost:1000/api/auth/google/callback',
+      callbackURL:
+        'http://localhost:1000/api/auth/google/callback' ||
+        'https://jinstore-api.onrender.com/api/auth/google/callback',
       scope: ['profile', 'email'],
       prompt: 'select_account',
     },
