@@ -1,10 +1,14 @@
 const cors = require('cors');
+const routes = require('./routes');
 const express = require('express');
+const passport = require('passport');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+
 const connectDB = require('./config/db');
 const logger = require('./config/logger');
-const cookieParser = require('cookie-parser');
+const passportSetup = require('./config/passport');
 const { errorHandler } = require('./middlewares/errorMiddleware');
-const routes = require('./routes');
 
 require('dotenv').config();
 connectDB();
@@ -29,7 +33,6 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log('CORS blocked for origin:', origin);
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -39,14 +42,23 @@ app.use(
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'your_session_secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  }),
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use('/api', routes);
-
-app.get('/api', (req, res) => {
-  res.send('JinStore API is running...');
-});
-
 app.use(errorHandler);
 
 module.exports = app;

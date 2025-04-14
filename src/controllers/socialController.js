@@ -1,10 +1,9 @@
 const passport = require('../config/passport');
 const jwt = require('jsonwebtoken');
 const { generateRefreshToken, generateToken } = require('../utils/createToken');
+const { generateUsername } = require('../utils/generateUsername');
 const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken'); // Giả sử bạn có model RefreshToken
-
-// Đăng nhập bằng Google
 
 // Callback từ Google
 const googleCallback = async (req, res) => {
@@ -19,19 +18,30 @@ const googleCallback = async (req, res) => {
     // Kiểm tra hoặc tạo người dùng trong cơ sở dữ liệu
     let existingUser = await User.findOne({ googleId: user.googleId });
     if (!existingUser) {
-      // Đảm bảo email và các trường khác tồn tại
-      const email = user.emails?.[0]?.value;
+      const email = user.email;
       if (!email) {
         return res.status(400).json({ message: 'Không thể lấy email từ Google' });
       }
 
-      existingUser = await User.create({
-        authProvider: 'google',
-        googleId: user.googleId,
-        fullname: user.displayName || 'Unknown',
-        email: email,
-        avatar: user.photos?.[0]?.value || null,
-      });
+      const resultUser = await User.findOne({ email: email });
+      const username = generateUsername(user.fullname);
+
+      if (resultUser) {
+        resultUser.authProvider = 'google';
+        resultUser.googleId = user.googleId;
+        await resultUser.save();
+        existingUser = resultUser;
+      } else {
+        const username = generateUsername(user.fullname);
+        existingUser = await User.create({
+          authProvider: 'google',
+          username,
+          googleId: user.googleId,
+          fullname: user.fullname,
+          email,
+          avatar: user.avatar || null,
+        });
+      }
     }
 
     // Tạo access token và refresh token
@@ -58,13 +68,41 @@ const googleCallback = async (req, res) => {
       path: '/',
       sameSite: 'strict',
     });
-
-    res.redirect(`http://localhost:5173/social/callback?accessToken=${accessToken}`);
+    // res.redirect(`http://localhost:5173/JinStore/social/callback?accessToken=${accessToken}`);
+    res.redirect(`http://localhost:5173/JinStore/login-google/success`);
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
 
+const loginSuccess = async (req, res) => {
+  try {
+    const user = req.user;
+
+    const infoUser = await User.findOne({ googleId: user.googleId });
+    if (!infoUser) {
+      return res.status(400).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    // Tạo access token
+    const accessToken = generateToken(infoUser);
+    const { password, ...others } = infoUser._doc;
+    return res.status(200).json({
+      success: true,
+      message: 'Đăng nhập thành công',
+      ...others,
+      accessToken,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy thông tin đăng nhập',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   googleCallback,
+  loginSuccess,
 };
