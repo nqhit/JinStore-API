@@ -4,15 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const getNextCategoryId = async () => {
+const getNextCategoryCode = async () => {
   try {
-    const lastCategory = await Category.findOne().sort({ _id: -1 });
+    const lastCategory = await Category.findOne().sort({ code: -1 });
 
-    const lastId = lastCategory ? parseInt(lastCategory._id.split('-')[1]) : 0;
+    const lastCode = lastCategory ? parseInt(lastCategory.code.split('-')[1]) : 0;
 
-    return `CAT-${String(lastId + 1).padStart(3, '0')}`;
+    return `CAT-${String(lastCode + 1).padStart(3, '0')}`;
   } catch (error) {
-    console.error('Error generating category ID:', error);
+    console.error('Error generating category code:', error);
     throw error;
   }
 };
@@ -61,49 +61,78 @@ module.exports = {
   createCategory: async (req, res) => {
     try {
       const { name, slug, description } = req.body;
-      const newId = await getNextCategoryId();
-      let imageData = { url: '', publicId: '' };
+      const trimmedName = name ? name.trim() : '';
 
       // Kiểm tra tên danh mục
-      if (!name || name.trim() === '') {
+      if (!trimmedName) {
         return res.status(400).json({
           success: false,
-          message: 'Tên danh mục là bắt buộc',
+          error: 'Thiếu dữ liệu',
+          message: 'Vui lòng nhập tên danh mục',
         });
       }
 
-      const trimmedName = name.trim();
+      // Kiểm tra độ dài mô tả
+      if (description && description.length > 500) {
+        return res.status(400).json({
+          success: false,
+          error: 'Mô tả quá dài',
+          message: 'Mô tả không được vượt quá 500 ký tự',
+        });
+      }
 
-      // Kiểm tra danh mục đã tồn tại theo tên (không phân biệt hoa thường)
-      const existingCategory = await Category.findOne({
-        name: { $regex: `^${trimmedName}$`, $options: 'i' },
-      });
+      // Kiểm tra danh mục đã tồn tại
+      const existingCategory = await Category.findOne({ name: trimmedName });
       if (existingCategory) {
         return res.status(409).json({
           success: false,
-          message: 'Danh mục này đã tồn tại',
+          error: 'Danh mục đã tồn tại',
+          message: 'Vui lòng nhập tên khác',
         });
       }
 
-      const checkSlug = await Category.findOne({ slug: slug });
+      // Kiểm tra và tạo slug
+      const finalSlug = slug ? slug.trim() : slugify(trimmedName, { lower: true, strict: true });
+      if (!finalSlug || !/^[a-z0-9-]+$/.test(finalSlug)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Slug không hợp lệ',
+          message: 'Slug chỉ được chứa chữ cái, số và dấu gạch ngang',
+        });
+      }
+      const checkSlug = await Category.findOne({ slug: finalSlug });
       if (checkSlug) {
-        return res.status(409).json({ success: false, message: 'Slug đã tồn tại!' });
+        return res.status(409).json({
+          success: false,
+          message: 'Slug đã tồn tại!',
+        });
       }
 
-      // Handle image upload if provided
+      // Tạo mã danh mục
+      const newCode = await getNextCategoryCode(); // Hoặc sử dụng uuidv4()
+      if (!newCode) {
+        return res.status(500).json({
+          success: false,
+          message: 'Không thể tạo mã danh mục',
+        });
+      }
+
+      // Tải ảnh lên nếu có
+      let imageData = { url: '', publicId: '' };
       if (req.file) {
         try {
-          // Upload to Cloudinary
-          const result = await uploadImage(req.file.path);
+          const result = await uploadImage(req.file.path, 'categories');
           imageData = {
             url: result.secure_url,
             publicId: result.public_id,
           };
-
-          // Clean up the temporary file
-          fs.unlinkSync(req.file.path);
+          try {
+            await fs.unlink(req.file.path);
+          } catch (unlinkError) {
+            console.error('Lỗi khi xóa tệp tạm:', unlinkError);
+          }
         } catch (uploadError) {
-          console.error('Error uploading image:', uploadError);
+          console.error('Lỗi khi tải ảnh lên Cloudinary:', uploadError);
           return res.status(500).json({
             success: false,
             message: 'Lỗi khi tải ảnh lên Cloudinary',
@@ -113,21 +142,27 @@ module.exports = {
 
       // Tạo danh mục mới
       const newCategory = new Category({
-        _id: newId,
+        code: newCode,
         name: trimmedName,
-        slug: slug,
+        slug: finalSlug,
         description: description || '',
         image: imageData,
       });
 
       const savedCategory = await newCategory.save();
 
-      res.status(201).json({
+      res.status(200).json({
         success: true,
         data: savedCategory,
       });
     } catch (error) {
       console.error('Lỗi:', error);
+      if (error.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message: 'Danh mục, mã hoặc slug đã tồn tại',
+        });
+      }
       res.status(500).json({
         success: false,
         message: 'Có lỗi xảy ra, vui lòng thử lại',
@@ -176,7 +211,7 @@ module.exports = {
           }
 
           // Upload new image to Cloudinary
-          const result = await uploadImage(req.file.path);
+          const result = await uploadImage(req.file.path, 'categories');
           category.image = {
             url: result.secure_url,
             publicId: result.public_id,
@@ -201,7 +236,7 @@ module.exports = {
       if (status) category.status = status;
 
       await category.save();
-      res.json({ success: true, data: category });
+      res.status(200).json({ success: true, data: category });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

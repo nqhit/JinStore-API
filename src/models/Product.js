@@ -16,19 +16,22 @@ const ProductSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    unit: {
+      type: String,
+      required: true,
+    },
     discount: {
       type: Number,
       default: 0,
     },
-    stock: {
+    quantity: {
       type: Number,
       required: true,
       default: 0,
     },
     _idCategory: {
-      type: mongoose.Schema.Types.String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
-      required: true,
     },
     isActive: {
       type: Boolean,
@@ -36,10 +39,20 @@ const ProductSchema = new mongoose.Schema(
     },
     images: [
       {
-        type: String,
-        required: true,
+        url: { type: String, default: '' },
+        publicId: { type: String, default: '' },
       },
     ],
+    // 🔑 Key-value động
+    information: {
+      type: [
+        {
+          key: { type: String, required: true },
+          value: { type: String, required: true },
+        },
+      ],
+      default: [], // <- nên thêm để mặc định là mảng rỗng nếu không có
+    },
   },
   { timestamps: true },
 );

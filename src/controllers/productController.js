@@ -1,10 +1,14 @@
 const Product = require('../models/Product');
+const { uploadImage, deleteImage } = require('../utils/cloudinary');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 module.exports = {
   //NOTE: Get all products
   getAllProducts: async (req, res) => {
     try {
-      const products = await Product.find();
+      const products = await Product.find().populate('_idCategory');
       if (products.length === 0) {
         return res.status(200).json({ message: 'Không có sản phẩm nào.' });
       }
@@ -24,7 +28,6 @@ module.exports = {
       }
 
       const product = await Product.findById(id).populate('_idCategory');
-      console.log(product);
       if (!product) {
         return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
       }
@@ -60,52 +63,181 @@ module.exports = {
   //NOTE: Create new product
   createProduct: async (req, res) => {
     try {
-      const { name, description, price, discount, stock, _idCategory, status, images } = req.body;
+      const { name, description, price, unit, discount, quantity, _idCategory, information } = req.body;
+      const trimmedName = name.trim();
+      let imagesData = [];
 
-      if (!name || !price || !stock || !_idCategory) {
+      //NOTE: Kiểm tra thông tin sản phẩm
+      if (!trimmedName || !price || !quantity || !_idCategory || !unit) {
         return res.status(400).json({
+          success: false,
           error: 'Thiếu dữ liệu',
           message: 'Vui lòng nhập đầy đủ thông tin.',
         });
       }
 
-      const existingProduct = await Product.findOne({ name: name.trim() });
+      // NOTE: Kiểm tra tên sản phẩm
+      const existingProduct = await Product.findOne({ name: { $regex: `^${trimmedName}$`, $options: 'i' } });
       if (existingProduct) {
         return res.status(400).json({
           success: false,
-          message: 'Danh mục này đã tồn tại',
+          error: 'Tên sản phẩm đã tồn tại',
+          message: 'Vui lòng nhập tên sản phẩm khác',
         });
       }
 
-      const newProduct = new Product({
-        name: name.trim(),
-        description: description || '',
-        price: price || 1,
-        discount: discount || 0,
-        stock: stock || 0,
-        _idCategory: _idCategory || '',
-        status: status || true,
-        images: images || null,
-      });
-      const product = await newProduct.save();
+      // NOTE: Tải nhiều ảnh lên nếu có
+      if (req.files && req.files.length > 0) {
+        try {
+          // Upload tất cả ảnh lên Cloudinary
+          const uploadPromises = req.files.map((file) => uploadImage(file.path, `products/${_idCategory}`));
+          const uploadResults = await Promise.all(uploadPromises);
 
-      res.status(200).json(product);
+          // Tạo mảng đối tượng ảnh theo đúng schema
+          imagesData = uploadResults.map((result) => ({
+            url: result.secure_url,
+            publicId: result.public_id,
+          }));
+
+          // Xóa tất cả các file tạm
+          req.files.forEach((file) => {
+            fs.unlinkSync(file.path);
+          });
+        } catch (uploadError) {
+          console.error('Error uploading images:', uploadError);
+          return res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tải ảnh lên Cloudinary',
+          });
+        }
+      }
+
+      //NOTE: Kiểm tra và chuyển JSON sang đối tượng JavaScript
+      let parsedInformation = [];
+      if (information) {
+        try {
+          parsedInformation = typeof information === 'string' ? JSON.parse(information) : information;
+
+          // Kiểm tra cấu trúc của information
+          if (!Array.isArray(parsedInformation) || !parsedInformation.every((item) => item.key && item.value)) {
+            return res.status(400).json({
+              success: false,
+              message: 'Thông tin sản phẩm phải là mảng các đối tượng có từ khóa và thông tin',
+            });
+          }
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            message: 'Thông tin sản phẩm (information) không hợp lệ',
+          });
+        }
+      }
+
+      const newProduct = new Product({
+        name: trimmedName,
+        description: description || '',
+        price: price || 0,
+        unit: unit || '',
+        discount: discount || 0,
+        quantity: quantity || 0,
+        _idCategory: _idCategory,
+        isActive: true,
+        images: imagesData,
+        information: parsedInformation,
+      });
+
+      const savedProduct = await newProduct.save();
+
+      res.status(200).json({
+        success: true,
+        data: savedProduct,
+      });
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error('Error creating product:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
     }
   },
 
   //NOTE:Update detail product
   editProduct: async (req, res) => {
     try {
+      const { name, description, price, discount, quantity, _idCategory, isActive, information, imagesToDelete } =
+        req.body;
       const { id } = req.params;
-      const Product = await Product.findByIdAndUpdate(id, req.body, { new: true }).populate('_idCategory');
+      const _product = await Product.findById(id).populate('_idCategory');
 
-      if (!Product) {
+      if (!_product) {
         return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
       }
 
-      res.status(200).json({ success: true, product: Product });
+      // Xử lý danh sách ảnh cần xóa
+      let parsedImagesToDelete = [];
+      if (imagesToDelete) {
+        try {
+          parsedImagesToDelete = typeof imagesToDelete === 'string' ? JSON.parse(imagesToDelete) : imagesToDelete;
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            message: 'Danh sách ảnh cần xóa (imagesToDelete) không hợp lệ',
+          });
+        }
+
+        // Xóa ảnh khỏi Cloudinary và cập nhật mảng images
+        for (const publicId of parsedImagesToDelete) {
+          try {
+            await deleteImage(publicId);
+            _product.images = _product.images.filter((img) => img.publicId !== publicId);
+          } catch (deleteError) {
+            console.error(`Error deleting image ${publicId}:`, deleteError);
+            // Tiếp tục xử lý các ảnh khác, không dừng lại
+          }
+        }
+      }
+
+      // Xử lý ảnh mới từ req.files
+      if (req.files && req.files.length > 0) {
+        const newImages = [];
+        for (const file of req.files) {
+          try {
+            const result = await uploadImage(file.path, 'products');
+            newImages.push({
+              url: result.secure_url,
+              publicId: result.public_id,
+            });
+            fs.unlinkSync(file.path); // Xóa file tạm
+          } catch (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            // Tiếp tục với các file khác
+          }
+        }
+        _product.images = [...(_product.images || []), ...newImages];
+      }
+
+      let parsedInformation = [];
+      if (information) {
+        try {
+          parsedInformation = typeof information === 'string' ? JSON.parse(information) : information;
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            message: 'Thông tin sản phẩm (information) không hợp lệ',
+          });
+        }
+      }
+
+      if (name) _product.name = name.trim();
+      if (description) _product.description = description;
+      if (price) _product.price = price;
+      if (discount) _product.discount = discount;
+      if (quantity) _product.quantity = quantity;
+      if (_idCategory) _product._idCategory = _idCategory;
+      if (isActive) _product.isActive = isActive;
+      if (information) _product.information = Array.isArray(parsedInformation) ? parsedInformation : [];
+      await _product.save();
+      res.status(200).json({ success: true, data: _product });
     } catch (error) {
       console.error('Lỗi server:', error);
       res.status(500).json({ message: 'Lỗi server', error });
@@ -116,10 +248,19 @@ module.exports = {
   deleteProduct: async (req, res) => {
     try {
       const { id } = req.params;
-      const deletedProduct = await Product.findByIdAndDelete(id);
-      if (!deletedProduct) {
+      const product = await Product.findById(id);
+      if (!product) {
         return res.status(404).json({ message: 'Product not found' });
       }
+      if (product.images && product.images.publicId) {
+        try {
+          await deleteImage(product.images.publicId);
+        } catch (deleteError) {
+          console.error('Error deleting image from Cloudinary:', deleteError);
+          // Continue with Product deletion even if image deletion fails
+        }
+      }
+      await Product.findByIdAndDelete(id);
       res.status(200).json({ message: 'Product deleted successfully' });
     } catch (error) {
       console.error(error);

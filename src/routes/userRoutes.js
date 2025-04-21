@@ -9,7 +9,7 @@ const {
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = require('express').Router();
 
-router.get('/', authMiddleware.verifyToken, getAllUsers);
+router.get('/', authMiddleware.verifyTokenAndAdmin, getAllUsers);
 router.get('/:id', authMiddleware.verifyToken, getUserInfo);
 
 router.patch('/info-user/:id', authMiddleware.verifyToken, updateUserInfo);

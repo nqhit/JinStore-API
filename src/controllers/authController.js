@@ -89,12 +89,8 @@ const authController = {
     try {
       const { usernameOrEmail, password } = req.body;
 
-      if (!usernameOrEmail) {
-        return res.status(400).json({ message: 'Vui lòng nhập username' });
-      }
-
-      if (!password) {
-        return res.status(400).json({ message: 'Vui lòng nhập mật khẩu' });
+      if (usernameOrEmail === '' || password === '') {
+        return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
       }
 
       const user = await _user
@@ -105,7 +101,7 @@ const authController = {
         .lean();
 
       if (!user) {
-        return res.status(401).json({ message: 'USERNAME KHÔNG TỒN TẠI' });
+        return res.status(401).json({ message: 'Người dùng không tồn tại' });
       }
 
       const isMatch = await bcrypt.compare(password, user.password);

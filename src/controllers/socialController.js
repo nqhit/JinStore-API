@@ -5,6 +5,8 @@ const { generateUsername } = require('../utils/generateUsername');
 const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken'); // Giả sử bạn có model RefreshToken
 
+const APP_URL = process.env.CLIENT_URL_V1 || process.env.CLIENT_URL_V2;
+
 // Callback từ Google
 const googleCallback = async (req, res) => {
   try {
@@ -69,7 +71,7 @@ const googleCallback = async (req, res) => {
       sameSite: 'strict',
     });
     // res.redirect(`http://localhost:5173/JinStore/social/callback?accessToken=${accessToken}`);
-    res.redirect(`http://localhost:5173/JinStore/login-google/success`);
+    res.redirect(`${APP_URL}/login-google/success`);
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }

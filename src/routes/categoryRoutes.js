@@ -10,7 +10,6 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const multer = require('multer');
 const path = require('path');
 const os = require('os');
-
 const router = express.Router();
 
 // Configure multer for file uploads

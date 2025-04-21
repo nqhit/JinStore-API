@@ -3,7 +3,7 @@ const slugify = require('slugify');
 
 const categorySchema = new mongoose.Schema(
   {
-    _id: { type: String, required: true },
+    code: { type: String, required: true, unique: true },
     name: { type: String, required: true, unique: true, trim: true },
     slug: { type: String, unique: true },
     description: { type: String, default: '' },
@@ -14,7 +14,6 @@ const categorySchema = new mongoose.Schema(
       publicId: { type: String, default: '' },
     },
   },
-  { timestamps: true }, // Bỏ _id: false vì đã định nghĩa _id thủ công
+  { timestamps: true },
 );
-
 module.exports = mongoose.model('Category', categorySchema);
