@@ -37,6 +37,10 @@ const ProductSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
     images: [
       {
         url: { type: String, default: '' },
