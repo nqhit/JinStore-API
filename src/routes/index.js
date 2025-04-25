@@ -8,11 +8,11 @@ router.use('/products', require('./productRoutes'));
 router.use('/discounts', require('./discountRoutes'));
 router.use('/categories', require('./categoryRoutes'));
 router.use('/otp', require('./verifyOTPRoutes'));
+router.use('/reviews', require('./reviewRoutes'));
 
 // Nếu cần sau này thì mở lại:
 // router.use('/orders', require('./orderRoutes'));
 // router.use('/payments', require('./paymentRoutes'));
-// router.use('/reviews', require('./reviewRoutes'));
 // router.use('/wishlist', require('./wishlistRoutes'));
 
 module.exports = router;
