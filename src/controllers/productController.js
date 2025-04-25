@@ -47,7 +47,17 @@ module.exports = {
         return res.status(400).json({ message: 'ID danh mục không hợp lệ!' });
       }
 
-      const products = await Product.find({ _idCategory: idCategory });
+      const products = await Product.find({ _idCategory: idCategory })
+        .populate('_idCategory') // Chỉ lấy các trường cần thiết từ Category
+        .populate({
+          path: '_idReview',
+          match: { isApproved: true }, // Chỉ lấy các đánh giá đã được duyệt
+          select: 'rating comment user createdAt', // Chỉ lấy các trường cần thiết từ Review
+          populate: {
+            path: 'user',
+            select: 'username email', // Lấy thông tin người dùng (tùy chọn)
+          },
+        });
 
       if (!products || products.length === 0) {
         return res.status(404).json({ message: 'Sản phẩm không tồn tại!' });

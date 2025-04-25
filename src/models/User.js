@@ -46,12 +46,13 @@ const UserSchema = new mongoose.Schema(
     dateBirth: {
       type: Date,
     },
-    address: {
-      street: { type: String, trim: true },
-      city: { type: String, trim: true },
-      district: { type: String, trim: true },
-      ward: { type: String, trim: true },
-    },
+    address: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Address',
+        required: true,
+      },
+    ],
     isAdmin: {
       type: Boolean,
       default: false,

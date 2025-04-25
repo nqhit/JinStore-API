@@ -107,11 +107,7 @@ module.exports = {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      const newPasswordUser = await User.findByIdAndUpdate(
-        user._id,
-        { password: hashedPassword },
-        { new: true, select: '-password' },
-      );
+      await User.findByIdAndUpdate(user._id, { password: hashedPassword }, { new: true, select: '-password' });
 
       await VerifyOTP.deleteOne({ user: user._id });
 

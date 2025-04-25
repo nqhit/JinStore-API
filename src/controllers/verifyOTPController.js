@@ -1,7 +1,8 @@
 const VerifyOTP = require('../models/VerifyOTP');
 const _users = require('../models/User');
-const MailJet = require('node-mailjet'); // Note the lowercase 'jet' in the require
+const MailJet = require('node-mailjet');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 require('dotenv').config();
 
@@ -14,7 +15,7 @@ const mailJet = new MailJet({
 module.exports = {
   sendOTPEmail: async (req, res) => {
     try {
-      let { email } = req.body;
+      const { email } = req.body;
       if (!email) {
         return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin.' });
       }
@@ -32,7 +33,8 @@ module.exports = {
         verifyOTP = new VerifyOTP({ user: user._id });
       }
 
-      verifyOTP.otp = otp;
+      const hashedOtp = await bcrypt.hash(otp, 10);
+      verifyOTP.otp = hashedOtp;
       verifyOTP.otpExpires = otpExpires;
       await verifyOTP.save();
 
@@ -77,14 +79,15 @@ module.exports = {
       //NOTE: lấy email từ localStorage
       const { email, otp } = req.body;
       if (!email || !otp) {
-        return res.status(400).json({ message: 'User ID and OTP are required' });
+        return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin.' });
       }
 
       const user = await _users.findOne({ email: email });
       console.log(user);
 
       const verifyOTP = await VerifyOTP.findOne({ user: user._id });
-      if (!verifyOTP || verifyOTP.otp !== otp || verifyOTP.otpExpires < new Date()) {
+      const isMatch = await bcrypt.compare(otp, verifyOTP.otp);
+      if (!verifyOTP || !isMatch || verifyOTP.otpExpires < new Date()) {
         return res.status(400).json({ message: 'Invalid or expired OTP' });
       }
 
