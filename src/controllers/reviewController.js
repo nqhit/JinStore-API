@@ -10,7 +10,7 @@ const createReview = async (req, res, next) => {
     // Check if product exists
     const product = await Product.findById(productId);
     if (!product) {
-      const error = new Error('Product not found');
+      const error = new Error('Không tìm thấy sản phẩm');
       error.statusCode = 404;
       throw error;
     }

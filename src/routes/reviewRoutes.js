@@ -10,22 +10,12 @@ const {
 } = require('../controllers/reviewController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-// Get all reviews (public access)
+router.use(authMiddleware.verifyToken);
+
 router.get('/', getAllReviews);
-
-// Create a new review
-router.post('/', authMiddleware.verifyToken, createReview);
-
-// Get all reviews for a product
+router.get('/user', getUserReviews);
 router.get('/product/:productId', getProductReviews);
-
-// Get all reviews by a user
-router.get('/user', authMiddleware.verifyToken, getUserReviews);
-
-// Update a review
-router.patch('/:reviewId', authMiddleware.verifyToken, updateReview);
-
-// Delete a review
-router.delete('/:reviewId', authMiddleware.verifyToken, deleteReview);
-
+router.post('/', createReview);
+router.patch('/update/:reviewId', updateReview);
+router.delete('/delete/:reviewId', deleteReview);
 module.exports = router;

@@ -4,12 +4,13 @@ const router = express.Router();
 // Import các route con
 router.use('/auth', require('./authRoutes'));
 router.use('/users', require('./userRoutes'));
+router.use('/addresses', require('./addressRoutes'));
 router.use('/products', require('./productRoutes'));
 router.use('/discounts', require('./discountRoutes'));
 router.use('/categories', require('./categoryRoutes'));
 router.use('/otp', require('./verifyOTPRoutes'));
 router.use('/reviews', require('./reviewRoutes'));
-router.use('/cart', require('./cartRoutes'));
+router.use('/carts', require('./cartRoutes'));
 
 // Nếu cần sau này thì mở lại:
 // router.use('/orders', require('./orderRoutes'));

@@ -15,5 +15,10 @@ const AddressSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+// Index để tối ưu truy vấn tìm kiếm theo người dùng
+AddressSchema.index({ _idUser: 1 });
+
+// Index để tối ưu truy vấn tìm địa chỉ mặc định của người dùng
+AddressSchema.index({ _idUser: 1, isDefault: 1 });
 
 module.exports = mongoose.model('Address', AddressSchema);
