@@ -1,35 +1,12 @@
 const _user = require('../models/User');
 const _refreshToken = require('../models/RefreshToken');
+const { generateRefreshToken, generateToken } = require('../utils/createToken');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const { http, add } = require('winston');
 
 const authController = {
-  //COMMENT: Tạo token JWT
-  generateToken: (user) => {
-    return jwt.sign(
-      {
-        _id: user._id,
-        isAdmin: user.isAdmin,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' },
-    );
-  },
-
-  //COMMENT: Tạo refresh token JWT
-  generateRefreshToken: (user) => {
-    return jwt.sign(
-      {
-        _id: user._id,
-        isAdmin: user.isAdmin,
-      },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: '30d' },
-    );
-  },
-
   //NOTE: Đăng ký
   registerUser: async (req, res) => {
     try {
@@ -109,8 +86,8 @@ const authController = {
         return res.status(400).json({ message: 'SAI MẬT KHẨU' });
       }
       if (user && isMatch) {
-        const accessToken = authController.generateToken(user);
-        const refreshToken = authController.generateRefreshToken(user);
+        const accessToken = generateToken(user);
+        const refreshToken = generateRefreshToken(user);
 
         const userId = user._id;
         const userRefreshToken = await _refreshToken.findOne({ userId: userId });
@@ -153,8 +130,8 @@ const authController = {
       }
       await _refreshToken.deleteOne({ token: refreshToken });
 
-      const newAccessToken = authController.generateToken(user);
-      const newRefreshToken = authController.generateRefreshToken(user);
+      const newAccessToken = generateToken(user);
+      const newRefreshToken = generateRefreshToken(user);
 
       await new _refreshToken({ token: newRefreshToken, userId: user._id }).save();
 
