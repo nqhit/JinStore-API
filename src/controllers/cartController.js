@@ -17,7 +17,6 @@ const formatProductData = (product) => {
     unit: product.unit,
     actualPrice,
     images: product.images,
-    quantity: product.quantity,
   };
 };
 
@@ -87,19 +86,19 @@ module.exports = {
           const itemTotal = Number((actualPrice * item.quantity).toFixed(2)); // Làm tròn 2 chữ số
           totalPrice += itemTotal;
 
+          const { ...otherProductData } = formatProductData(product);
           return {
-            product: formatProductData(product),
+            ...otherProductData,
             quantity: item.quantity,
             total: itemTotal,
           };
         })
         .filter((item) => item !== null); // Lọc bỏ các mục không hợp lệ
-
+      const { ...itemProduct } = cartItems;
       res.status(200).json({
         success: true,
         data: {
-          items: cartItems,
-          totalPrice: Number(totalPrice.toFixed(2)), // Làm tròn tổng giá
+          ...itemProduct,
           itemCount: cartItems.length,
         },
       });
@@ -130,7 +129,6 @@ module.exports = {
       // Find or create cart
       const cart = await findOrCreateCart(userId);
 
-      console.log(cart);
       // Check if product already in cart
       const itemIndex = cart.items.findIndex((item) => item._idProduct._id.toString() === productId.toString());
       console.log(itemIndex);
