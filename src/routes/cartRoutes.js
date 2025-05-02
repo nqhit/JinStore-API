@@ -10,7 +10,7 @@ router.get('/', authMiddleware.verifyToken, cartController.getCart);
 router.post('/add', authMiddleware.verifyToken, cartController.addToCart);
 
 // Update cart item quantity
-router.put('/update', authMiddleware.verifyToken, cartController.updateCartItem);
+router.patch('/update', authMiddleware.verifyToken, cartController.updateCartItem);
 
 // Remove item from cart
 router.delete('/remove/:productId', authMiddleware.verifyToken, cartController.removeCartItem);
