@@ -69,6 +69,7 @@ const googleCallback = async (req, res) => {
       secure: false,
       path: '/',
       sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000, 
     });
     // res.redirect(`http://localhost:5173/JinStore/social/callback?accessToken=${accessToken}`);
     res.redirect(`${APP_URL}/login-google/success`);
