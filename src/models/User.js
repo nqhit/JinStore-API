@@ -39,9 +39,9 @@ const UserSchema = new mongoose.Schema(
       type: String,
       match: [/^[0-9]{10,11}$/, 'Số điện thoại không hợp lệ'],
     },
-    sex: {
+    gender: {
       type: String,
-      enum: ['nam', 'nu'],
+      enum: ['male', 'female', 'other'],
     },
     dateBirth: {
       type: Date,
@@ -74,8 +74,8 @@ const UserSchema = new mongoose.Schema(
       sparse: true,
     },
     avatar: {
-      type: String,
-      trim: true,
+      url: { type: String, default: '', trim: true },
+      publicId: { type: String, default: '', trim: true },
     },
     isActive: {
       type: Boolean,

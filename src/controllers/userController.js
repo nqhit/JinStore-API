@@ -1,8 +1,10 @@
 const VerifyOTP = require('../models/VerifyOTP');
+const { uploadImage, deleteImage } = require('../utils/cloudinary');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
+const fs = require('fs');
 
 module.exports = {
   //NOTE: Get all user
@@ -27,7 +29,7 @@ module.exports = {
   //NOTE: Get information user
   getUserInfo: async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = req.user._id;
       if (!id) {
         return res.status(400).json({
           success: false,
@@ -51,10 +53,12 @@ module.exports = {
         });
       }
 
+      const { ...other } = infoUser._doc;
+
       res.status(200).json({
         success: true,
         message: 'Thông tin người dùng',
-        user: infoUser,
+        user: other,
       });
     } catch (error) {
       res.status(500).json({
@@ -68,7 +72,7 @@ module.exports = {
   //NOTE: Update any user information - Unified update method
   updateUser: async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = req.user._id;
       const updates = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -79,7 +83,7 @@ module.exports = {
       }
 
       // Kiểm tra quyền, người dùng chỉ có thể cập nhật thông tin của chính họ, trừ khi là admin
-      if (req.user && req.user._id !== id && !req.user.isAdmin) {
+      if (req.user && req.user._id.toString() !== id && !req.user.isAdmin) {
         return res.status(403).json({
           success: false,
           message: 'Bạn không có quyền cập nhật thông tin của người dùng khác',
@@ -108,14 +112,14 @@ module.exports = {
         updateData.fullname = updates.fullname;
       }
 
-      if (updates.sex !== undefined) {
-        if (!['nam', 'nu'].includes(updates.sex)) {
+      if (updates.gender !== undefined) {
+        if (!['male', 'female', 'other'].includes(updates.gender)) {
           return res.status(400).json({
             success: false,
             message: 'Giới tính phải là "nam" hoặc "nu"',
           });
         }
-        updateData.sex = updates.sex;
+        updateData.gender = updates.gender;
       }
 
       if (updates.dateBirth !== undefined) {
@@ -139,14 +143,28 @@ module.exports = {
         updateData.phone = updates.phone;
       }
 
-      if (updates.avatar !== undefined) {
-        if (typeof updates.avatar !== 'string' || !updates.avatar.trim()) {
-          return res.status(400).json({
+      if (req.file) {
+        try {
+          if (req.user.avatar && req.user.avatar.publicId) {
+            await deleteImage(req.user.avatar.publicId);
+          }
+
+          // Upload new image to Cloudinary
+          const result = await uploadImage(req.file.path, 'users');
+          updateData.avatar = {
+            url: result.secure_url,
+            publicId: result.public_id,
+          };
+
+          // Clean up the temporary file
+          fs.unlinkSync(req.file.path);
+        } catch (uploadError) {
+          console.error('Error handling image:', uploadError);
+          return res.status(500).json({
             success: false,
-            message: 'URL ảnh đại diện không hợp lệ',
+            message: 'Lỗi khi xử lý ảnh',
           });
         }
-        updateData.avatar = updates.avatar;
       }
 
       // Chỉ admin mới có thể thay đổi các trường này
@@ -273,7 +291,7 @@ module.exports = {
   //NOTE: Delete user
   deleteUser: async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = req.user._id;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({

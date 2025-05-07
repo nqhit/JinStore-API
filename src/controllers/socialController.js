@@ -11,7 +11,7 @@ const APP_URL = process.env.CLIENT_URL_V1 || process.env.CLIENT_URL_V2;
 const googleCallback = async (req, res) => {
   try {
     const user = req.user;
-
+    console.log(user);
     // Kiểm tra dữ liệu từ Google
     if (!user.googleId) {
       return res.status(400).json({ message: 'Không thể lấy googleId từ Google' });
@@ -26,7 +26,6 @@ const googleCallback = async (req, res) => {
       }
 
       const resultUser = await User.findOne({ email: email });
-      const username = generateUsername(user.fullname);
 
       if (resultUser) {
         resultUser.authProvider = 'google';
@@ -69,7 +68,7 @@ const googleCallback = async (req, res) => {
       secure: false,
       path: '/',
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000, 
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
     // res.redirect(`http://localhost:5173/JinStore/social/callback?accessToken=${accessToken}`);
     res.redirect(`${APP_URL}/login-google/success`);
