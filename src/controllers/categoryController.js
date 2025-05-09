@@ -21,9 +21,7 @@ module.exports = {
   //NOTE: Get all category
   getAllCategory: async (req, res) => {
     try {
-      console.log('🔍 Fetching all categories...');
       const categories = await Category.find();
-      console.log(`✅ Found ${categories.length} categories`);
 
       // Log the first category for debugging
       if (categories.length > 0) {
@@ -41,7 +39,6 @@ module.exports = {
   getCategory: async (req, res) => {
     try {
       const { id } = req.params;
-      console.log(`🔍 Fetching category with ID: ${id}`);
 
       const category = await Category.findById(id);
       if (!category) {
@@ -49,7 +46,6 @@ module.exports = {
         return res.status(404).json({ message: 'Danh mục không tồn tại' });
       }
 
-      console.log(`✅ Found category: ${category.name}`);
       res.status(200).json(category);
     } catch (error) {
       console.error('❌ Error fetching category:', error);

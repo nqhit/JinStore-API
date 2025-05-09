@@ -6,13 +6,13 @@ module.exports = {
   // Lấy tất cả địa chỉ của một người dùng
   getAddressesByUser: async (req, res) => {
     try {
-      const userId = req.params.userId;
+      const userId = req.user._id;
 
       if (!mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({ success: false, message: 'ID người dùng không hợp lệ' });
       }
 
-      const addresses = await Address.find({ _idUser: userId });
+      const addresses = await Address.find({ _idUser: userId }).populate('_idUser', 'fullname phone').select('');
 
       return res.status(200).json({
         success: true,
@@ -61,7 +61,8 @@ module.exports = {
     session.startTransaction();
 
     try {
-      const { userId, street, ward, district, city, isDefault } = req.body;
+      const userId = req.user._id;
+      const { detailed, district, city, province, isDefault } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({ success: false, message: 'ID người dùng không hợp lệ' });
@@ -81,10 +82,10 @@ module.exports = {
       // Tạo địa chỉ mới
       const address = new Address({
         _idUser: userId,
-        street,
-        ward,
+        detailed,
         district,
         city,
+        province,
         isDefault: isDefault || false,
       });
 
@@ -121,7 +122,7 @@ module.exports = {
 
     try {
       const addressId = req.params.addressId;
-      const { street, ward, district, city, isDefault } = req.body;
+      const { detailed, district, city, province, isDefault } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(addressId)) {
         return res.status(400).json({ success: false, message: 'ID địa chỉ không hợp lệ' });
@@ -141,9 +142,10 @@ module.exports = {
       const updatedAddress = await Address.findByIdAndUpdate(
         addressId,
         {
-          street: street || address.street,
-          ward: ward || address.ward,
+          detailed: detailed || address.detailed,
           district: district || address.district,
+          city: city || address.city,
+          province: province || address.province,
           city: city || address.city,
           isDefault: isDefault !== undefined ? isDefault : address.isDefault,
         },
@@ -221,7 +223,7 @@ module.exports = {
 
     try {
       const addressId = req.params.addressId;
-      const userId = req.body.userId;
+      const userId = req.user._id;
 
       if (!mongoose.Types.ObjectId.isValid(addressId) || !mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
