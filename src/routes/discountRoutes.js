@@ -7,13 +7,18 @@ const {
   createDiscount,
   updateDiscount,
   deleteDiscount,
+  toggleDiscountStatus,
 } = require('../controllers/discountController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-router.get('/', authMiddleware.verifyTokenAndAdmin, getAllDiscounts);
-router.get('/', getDiscount);
+// Public routes
+router.get('/all', getAllDiscounts);
+router.get('/:id', getDiscount);
+
+// Protected routes (admin only)
 router.post('/create', authMiddleware.verifyTokenAndAdmin, createDiscount);
-router.patch('/:id', authMiddleware.verifyTokenAndAdmin, updateDiscount);
+router.put('/:id', authMiddleware.verifyTokenAndAdmin, updateDiscount);
 router.delete('/:id', authMiddleware.verifyTokenAndAdmin, deleteDiscount);
+router.patch('/toggle/:id', authMiddleware.verifyTokenAndAdmin, toggleDiscountStatus);
 
 module.exports = router;

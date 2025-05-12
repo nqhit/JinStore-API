@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Schema cho từng sản phẩm trong đơn hàng
 const orderItemSchema = new mongoose.Schema(
   {
     _idProduct: {
@@ -22,9 +23,10 @@ const orderItemSchema = new mongoose.Schema(
       min: 0,
     },
   },
-  { _id: false }, // tránh tạo _id cho từng item
+  { _id: false },
 );
 
+// Schema cho đơn hàng
 const orderSchema = new mongoose.Schema(
   {
     _idUser: {
@@ -37,24 +39,23 @@ const orderSchema = new mongoose.Schema(
       type: [orderItemSchema],
       validate: [(val) => val.length > 0, 'Đơn hàng phải có ít nhất một sản phẩm'],
     },
-    
+
     shippingAddress: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Address',
       required: true,
     },
 
+    // Thay thế phương thức thanh toán cũ bằng tham chiếu đến PaymentMethod
     paymentMethod: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PaymentMethod',
       required: true,
-      enum: ['Tiền mặt khi nhận hàng', 'Chuyển khoản ngân hàng', 'Ví điện tử'],
     },
 
-    shippingFee: {
-      type: Number,
-      required: true,
-      default: 0,
-      min: 0,
+    payment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment',
     },
 
     totalPrice: {
@@ -72,19 +73,10 @@ const orderSchema = new mongoose.Schema(
       type: Date,
     },
 
-    isDelivered: {
-      type: Boolean,
-      default: false,
-    },
-
-    deliveredAt: {
-      type: Date,
-    },
-
     status: {
       type: String,
       required: true,
-      enum: ['Chờ xác nhận', 'Đang xử lý', 'Đang giao hàng', 'Đã giao hàng', 'Đã hủy'],
+      enum: ['Chờ xác nhận', 'Đang xử lý', 'Đã giao hàng', 'Đã hủy'],
       default: 'Chờ xác nhận',
     },
 
@@ -93,24 +85,16 @@ const orderSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // createdAt, updatedAt
+    timestamps: true, // createdAt và updatedAt tự động
   },
 );
 
-// Middleware để tính totalPrice nếu không được cung cấp
+// Tính tổng tiền nếu chưa có
 orderSchema.pre('save', function (next) {
-  if (!this.isModified('orderItems') && this.totalPrice) {
-    return next();
-  }
+  if (!this.isModified('orderItems') && this.totalPrice) return next();
 
-  // Tính tổng giá từ các mục hàng
-  if (this.orderItems && this.orderItems.length > 0) {
-    const itemsTotal = this.orderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
-    // Tính tổng tiền bao gồm phí vận chuyển
-    this.totalPrice = itemsTotal + this.shippingFee;
-  }
-
+  const itemsTotal = this.orderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  this.totalPrice = itemsTotal;
   next();
 });
 
