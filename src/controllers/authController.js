@@ -106,8 +106,8 @@ const authController = {
           maxAge: 30 * 24 * 60 * 60 * 1000,
         });
 
-        const { password, ...others } = user;
-        res.status(200).json({ ...others, accessToken });
+        const { password, googleId, ...others } = user;
+        res.status(200).json({ ...others, accessToken, hasPassword: true });
       }
     } catch (error) {
       console.error('❌ Lỗi đăng nhập:', error);

@@ -88,12 +88,13 @@ const loginSuccess = async (req, res) => {
 
     // Tạo access token
     const accessToken = generateToken(infoUser);
-    const { password, ...others } = infoUser._doc;
+    const { password, googleId, ...others } = infoUser._doc;
     return res.status(200).json({
       success: true,
       message: 'Đăng nhập thành công',
       ...others,
       accessToken,
+      hasPassword: !!password,
     });
   } catch (error) {
     return res.status(500).json({

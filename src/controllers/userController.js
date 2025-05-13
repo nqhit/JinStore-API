@@ -288,6 +288,81 @@ module.exports = {
     }
   },
 
+  // NOTE: Change password
+  changePassword: async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Người dùng không tồn tại',
+        });
+      }
+
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+
+      // Kiểm tra thông tin bắt buộc
+      if (!newPassword || !confirmPassword || (user.password && !currentPassword)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng nhập đầy đủ thông tin',
+        });
+      }
+
+      // Nếu user có password, kiểm tra mật khẩu cũ
+      if (user.password) {
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({
+            success: false,
+            message: 'Mật khẩu cũ không đúng',
+          });
+        }
+      }
+
+      // Kiểm tra xác nhận mật khẩu
+      if (newPassword !== confirmPassword) {
+        return res.status(409).json({
+          success: false,
+          message: 'Mật khẩu xác nhận không khớp',
+        });
+      }
+
+      // Kiểm tra độ mạnh mật khẩu
+      if (
+        !validator.isStrongPassword(newPassword, {
+          minLength: 8,
+          minLowercase: 1,
+          minUppercase: 1,
+          minNumbers: 1,
+        })
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mật khẩu ít nhất 8 ký tự bao gồm chữ thường, in hoa, số',
+        });
+      }
+
+      // Hash và cập nhật
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await User.findByIdAndUpdate(user._id, { password: hashedPassword });
+
+      res.status(200).json({
+        success: true,
+        message: 'Cập nhật mật khẩu thành công',
+      });
+    } catch (error) {
+      console.error('Lỗi server:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi server',
+        error: error.message,
+      });
+    }
+  },
+
   //NOTE: Delete user
   deleteUser: async (req, res) => {
     try {

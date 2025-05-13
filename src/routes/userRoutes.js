@@ -1,5 +1,12 @@
 const router = require('express').Router();
-const { getAllUsers, getUserInfo, updateUser, deleteUser, updatePassword } = require('../controllers/userController');
+const {
+  getAllUsers,
+  getUserInfo,
+  updateUser,
+  deleteUser,
+  updatePassword,
+  changePassword,
+} = require('../controllers/userController');
 const { verifyToken, verifyTokenAndAdmin } = require('../middlewares/authMiddleware');
 const multer = require('multer');
 const path = require('path');
@@ -43,5 +50,6 @@ router.patch('/info-user/update', verifyToken, upload.single('avatar'), updateUs
 
 // Public routes
 router.patch('/reset-password', updatePassword);
+router.patch('/change-password', verifyToken, changePassword);
 
 module.exports = router;
