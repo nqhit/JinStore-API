@@ -89,21 +89,15 @@ const authController = {
         const accessToken = generateToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        const userId = user._id;
-        const userRefreshToken = await _refreshToken.findOne({ userId: userId });
+        await _refreshToken.updateOne({ userId: user._id }, { token: refreshToken }, { upsert: true });
 
-        if (userRefreshToken) {
-          await _refreshToken.findByIdAndUpdate(userRefreshToken._id, { token: refreshToken }, { new: true });
-        } else {
-          await new _refreshToken({ token: refreshToken, userId: userId }).save();
-        }
-
+        // 👉 Set cookie
         res.cookie('refreshToken', refreshToken, {
           httpOnly: true,
           secure: false,
           path: '/',
           sameSite: 'strict',
-          maxAge: 30 * 24 * 60 * 60 * 1000,
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
         });
 
         const { password, googleId, ...others } = user;
@@ -134,7 +128,7 @@ const authController = {
       const newAccessToken = generateToken(user);
       const newRefreshToken = generateRefreshToken(user);
 
-      await new _refreshToken({ token: newRefreshToken, userId: user._id }).save();
+      await _refreshToken.updateOne({ userId: user._id }, { token: newRefreshToken }, { upsert: true });
 
       return res
         .cookie('refreshToken', newRefreshToken, {
@@ -142,6 +136,7 @@ const authController = {
           secure: false,
           path: '/',
           sameSite: 'strict',
+          maxAge: 30 * 24 * 60 * 60 * 1000,
         })
         .status(200)
         .json({
@@ -162,18 +157,10 @@ const authController = {
       await _refreshToken.deleteOne({ userId: id });
 
       // Xóa cookie và gửi response
-      return res
-        .clearCookie('refreshToken', {
-          httpOnly: true,
-          secure: false,
-          path: '/',
-          sameSite: 'strict',
-        })
-        .status(200)
-        .json({
-          success: true,
-          message: 'Đăng xuất thành công!',
-        });
+      return res.clearCookie('refreshToken').status(200).json({
+        success: true,
+        message: 'Đăng xuất thành công!',
+      });
     } catch (err) {
       console.error('Logout error:', err);
       return res.status(500).json({

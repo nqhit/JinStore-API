@@ -94,13 +94,10 @@ module.exports = {
           };
         })
         .filter((item) => item !== null); // Lọc bỏ các mục không hợp lệ
-      const { ...itemProduct } = cartItems;
       res.status(200).json({
         success: true,
-        data: {
-          ...itemProduct,
-          itemCount: cartItems.length,
-        },
+        data: cartItems,
+        itemCount: cartItems.length,
       });
     } catch (error) {
       res.status(500).json({
@@ -148,6 +145,7 @@ module.exports = {
         success: true,
         message: 'Đã thêm sản phẩm vào giỏ hàng',
         data: cart,
+        itemCount: cart.items.length,
       });
     } catch (error) {
       res.status(500).json({
@@ -247,6 +245,7 @@ module.exports = {
         success: true,
         message: 'Đã xóa sản phẩm khỏi giỏ hàng',
         data: cart,
+        itemCount: cart.items.length,
       });
     } catch (error) {
       res.status(500).json({

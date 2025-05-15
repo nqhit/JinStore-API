@@ -74,10 +74,10 @@ module.exports = {
   createProduct: async (req, res) => {
     try {
       const { name, description, price, unit, discount, quantity, _idCategory, information } = req.body;
-      const trimmedName = name.trim();
+      const trimmedName = name?.trim();
       let imagesData = [];
 
-      //NOTE: Kiểm tra thông tin sản phẩm
+      // Kiểm tra thông tin bắt buộc
       if (!trimmedName || !price || !quantity || !_idCategory || !unit) {
         return res.status(400).json({
           success: false,
@@ -86,7 +86,15 @@ module.exports = {
         });
       }
 
-      // NOTE: Kiểm tra tên sản phẩm
+      // Kiểm tra kiểu dữ liệu số
+      if (isNaN(price) || isNaN(quantity) || (discount && isNaN(discount))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Giá, số lượng và giảm giá phải là số',
+        });
+      }
+
+      // Kiểm tra trùng tên
       const existingProduct = await Product.findOne({ name: { $regex: `^${trimmedName}$`, $options: 'i' } });
       if (existingProduct) {
         return res.status(400).json({
@@ -96,23 +104,18 @@ module.exports = {
         });
       }
 
-      // NOTE: Tải nhiều ảnh lên nếu có
+      // Upload ảnh nếu có
       if (req.files && req.files.length > 0) {
         try {
-          // Upload tất cả ảnh lên Cloudinary
-          const uploadPromises = req.files.map((file) => uploadImage(file.path, `products/${_idCategory}`));
+          const uploadPromises = req.files.map((file) => uploadImage(file.path, `products/temp-${Date.now()}`));
           const uploadResults = await Promise.all(uploadPromises);
-
-          // Tạo mảng đối tượng ảnh theo đúng schema
           imagesData = uploadResults.map((result) => ({
             url: result.secure_url,
             publicId: result.public_id,
           }));
 
-          // Xóa tất cả các file tạm
-          req.files.forEach((file) => {
-            fs.unlinkSync(file.path);
-          });
+          // Xóa file tạm
+          req.files.forEach((file) => fs.unlinkSync(file.path));
         } catch (uploadError) {
           console.error('Error uploading images:', uploadError);
           return res.status(500).json({
@@ -122,13 +125,11 @@ module.exports = {
         }
       }
 
-      //NOTE: Kiểm tra và chuyển JSON sang đối tượng JavaScript
+      // Parse thông tin thêm nếu có
       let parsedInformation = [];
       if (information) {
         try {
           parsedInformation = typeof information === 'string' ? JSON.parse(information) : information;
-
-          // Kiểm tra cấu trúc của information
           if (!Array.isArray(parsedInformation) || !parsedInformation.every((item) => item.key && item.value)) {
             return res.status(400).json({
               success: false,
@@ -143,14 +144,15 @@ module.exports = {
         }
       }
 
+      // Tạo sản phẩm mới
       const newProduct = new Product({
         name: trimmedName,
         description: description || '',
-        price: price || 0,
-        unit: unit || '',
-        discount: discount || 0,
-        quantity: quantity || 0,
-        _idCategory: _idCategory,
+        price: Number(price),
+        unit,
+        discount: Number(discount) || 0,
+        quantity: Number(quantity),
+        _idCategory,
         isActive: true,
         images: imagesData,
         information: parsedInformation,
@@ -238,16 +240,25 @@ module.exports = {
         }
       }
 
-      if (name) _product.name = name.trim();
-      if (description) _product.description = description;
-      if (price) _product.price = price;
-      if (discount) _product.discount = discount;
-      if (quantity) _product.quantity = quantity;
-      if (_idCategory) _product._idCategory = _idCategory;
-      if (isActive) _product.isActive = isActive;
-      if (information) _product.information = Array.isArray(parsedInformation) ? parsedInformation : [];
-      await _product.save();
-      res.status(200).json({ success: true, data: _product });
+      const newProduct = new Product({
+        name: trimmedName,
+        description: description || '',
+        price: price || 0,
+        unit: unit || '',
+        discount: discount || 0,
+        quantity: quantity || 0,
+        _idCategory: _idCategory,
+        isActive: true,
+        images: imagesData,
+        information: parsedInformation,
+      });
+
+      const savedProduct = await newProduct.save();
+
+      res.status(200).json({
+        success: true,
+        data: savedProduct,
+      });
     } catch (error) {
       console.error('Lỗi server:', error);
       res.status(500).json({ message: 'Lỗi server', error });
