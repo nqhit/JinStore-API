@@ -3,11 +3,6 @@ const mongoose = require('mongoose');
 // Schema cho từng sản phẩm trong đơn hàng
 const orderItemSchema = new mongoose.Schema(
   {
-    _idProduct: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
-      required: true,
-    },
     name: {
       type: String,
       required: true,

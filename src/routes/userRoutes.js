@@ -46,7 +46,10 @@ router.delete('/delete', verifyTokenAndAdmin, deleteUser);
 
 // Authenticated user routes
 router.get('/info-user', verifyToken, getUserInfo);
+router.get('/info-user/:id', verifyTokenAndAdmin, getUserInfo);
+
 router.patch('/info-user/update', verifyToken, upload.single('avatar'), updateUser);
+router.patch('/info-user/update/:id', verifyToken, upload.single('avatar'), updateUser);
 
 // Public routes
 router.patch('/reset-password', updatePassword);

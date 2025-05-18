@@ -94,13 +94,16 @@ module.exports = {
           };
         })
         .filter((item) => item !== null); // Lọc bỏ các mục không hợp lệ
-      res.status(200).json({
+
+      // Thêm return ở đây để tránh tiếp tục thực thi code sau khi response đã được gửi
+      return res.status(200).json({
         success: true,
         data: cartItems,
         itemCount: cartItems.length,
+        totalPrice: Number(totalPrice.toFixed(2)), // Thêm tổng giá để UI có thể sử dụng
       });
     } catch (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Không thể lấy giỏ hàng',
         error: error.message,
@@ -141,14 +144,14 @@ module.exports = {
       // Save cart
       await cart.save();
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Đã thêm sản phẩm vào giỏ hàng',
         data: cart,
         itemCount: cart.items.length,
       });
     } catch (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Không thể thêm vào giỏ hàng',
         error: error.message,
@@ -208,13 +211,13 @@ module.exports = {
       cart.items[itemIndex].quantity = quantity;
       await cart.save();
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Đã cập nhật giỏ hàng',
         data: cart,
       });
     } catch (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Không thể cập nhật giỏ hàng',
         error: error.message,
@@ -241,14 +244,14 @@ module.exports = {
 
       await cart.save();
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Đã xóa sản phẩm khỏi giỏ hàng',
         data: cart,
         itemCount: cart.items.length,
       });
     } catch (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Không thể xóa sản phẩm khỏi giỏ hàng',
         error: error.message,
@@ -270,13 +273,13 @@ module.exports = {
         });
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Đã xóa toàn bộ giỏ hàng',
         data: result,
       });
     } catch (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Không thể xóa giỏ hàng',
         error: error.message,

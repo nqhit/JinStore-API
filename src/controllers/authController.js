@@ -85,7 +85,7 @@ const authController = {
       if (!isMatch) {
         return res.status(400).json({ message: 'SAI MẬT KHẨU' });
       }
-      if (user && isMatch) {
+      if (user.isActive && user && isMatch) {
         const accessToken = generateToken(user);
         const refreshToken = generateRefreshToken(user);
 

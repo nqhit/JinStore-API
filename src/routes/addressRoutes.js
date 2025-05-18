@@ -6,6 +6,8 @@ const { verifyToken, verifyTokenAndAdmin } = require('../middlewares/authMiddlew
 // Lấy tất cả địa chỉ của một người dùng
 router.get('/user/all', verifyToken, addressController.getAddressesByUser);
 
+router.get('/user/all/:id', verifyToken, addressController.getAddressesByUser);
+
 // Lấy một địa chỉ cụ thể
 router.get('/:addressId', verifyToken, addressController.getAddress);
 

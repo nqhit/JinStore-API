@@ -29,7 +29,12 @@ module.exports = {
   //NOTE: Get information user
   getUserInfo: async (req, res) => {
     try {
-      const id = req.user._id;
+      let id;
+      if (req.params.id) {
+        id = req.params.id;
+      } else {
+        id = req.user._id;
+      }
       if (!id) {
         return res.status(400).json({
           success: false,
@@ -72,7 +77,7 @@ module.exports = {
   //NOTE: Update any user information - Unified update method
   updateUser: async (req, res) => {
     try {
-      const id = req.user._id;
+      const id = req.params.id ?? req.user._id;
       const updates = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -83,7 +88,7 @@ module.exports = {
       }
 
       // Kiểm tra quyền, người dùng chỉ có thể cập nhật thông tin của chính họ, trừ khi là admin
-      if (req.user && req.user._id.toString() !== id && !req.user.isAdmin) {
+      if (req.user && req.params.id !== req.user._id && !req.user.isAdmin) {
         return res.status(403).json({
           success: false,
           message: 'Bạn không có quyền cập nhật thông tin của người dùng khác',
@@ -142,11 +147,13 @@ module.exports = {
         }
         updateData.phone = updates.phone;
       }
-
+      const currentUser = await User.findById(id);
       if (req.file) {
         try {
-          if (req.user.avatar && req.user.avatar.publicId) {
-            await deleteImage(req.user.avatar.publicId);
+          // Xóa ảnh cũ nếu có
+          if (currentUser?.avatar?.publicId) {
+            const result = await deleteImage(currentUser.avatar.publicId);
+            console.log('Delete result:', result);
           }
 
           // Upload new image to Cloudinary
@@ -168,13 +175,13 @@ module.exports = {
       }
 
       // Chỉ admin mới có thể thay đổi các trường này
-      if (req.user.isAdmin) {
+      if (req.user.isAdmin && id !== req.user._id) {
         if (updates.isAdmin !== undefined) {
-          updateData.isAdmin = Boolean(updates.isAdmin);
+          updateData.isAdmin = updates.isAdmin;
         }
 
         if (updates.isActive !== undefined) {
-          updateData.isActive = Boolean(updates.isActive);
+          updateData.isActive = updates.isActive;
         }
       }
 
