@@ -7,7 +7,7 @@ const {
   deleteReview,
   getUserReviews,
   getAllReviews,
-} = require('../controllers/reviewController');
+} = require('../controllers/review.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 router.use(authMiddleware.verifyToken);

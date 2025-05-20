@@ -11,14 +11,14 @@ module.exports = {
   getAllUsers: async (req, res) => {
     try {
       const users = await User.find().select('-password -googleId -facebookId').populate('address');
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Lấy danh sách người dùng thành công',
         users,
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Lỗi server',
         error: error.message,
@@ -60,13 +60,13 @@ module.exports = {
 
       const { ...other } = infoUser._doc;
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Thông tin người dùng',
         user: other,
       });
     } catch (error) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Lỗi server',
         error: error.message,
@@ -212,14 +212,14 @@ module.exports = {
         });
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Cập nhật thông tin thành công',
         user,
       });
     } catch (error) {
       console.error('Lỗi server:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Lỗi server',
         error: error.message,
@@ -281,13 +281,13 @@ module.exports = {
 
       await VerifyOTP.deleteOne({ user: user._id });
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Cập nhật mật khẩu thành công',
       });
     } catch (error) {
       console.error('Lỗi server:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Lỗi server',
         error: error.message,
@@ -356,13 +356,13 @@ module.exports = {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       await User.findByIdAndUpdate(user._id, { password: hashedPassword });
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Cập nhật mật khẩu thành công',
       });
     } catch (error) {
       console.error('Lỗi server:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Lỗi server',
         error: error.message,
@@ -404,13 +404,13 @@ module.exports = {
       // Lưu ý: Ở đây có thể cần xóa thêm các tham chiếu đến user trong các collection khác
       // như đơn hàng, giỏ hàng, bình luận, v.v.
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Xóa người dùng thành công',
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Lỗi server',
         error: error.message,

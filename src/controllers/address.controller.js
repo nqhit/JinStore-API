@@ -6,8 +6,12 @@ module.exports = {
   // Lấy tất cả địa chỉ của một người dùng
   getAddressesByUser: async (req, res) => {
     try {
-      const userId = req.params.id || req.user._id;
-
+      let userId;
+      if (req.params.id) {
+        userId = req.params.id;
+      } else {
+        userId = req.user._id;
+      }
       if (!mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({ success: false, message: 'ID người dùng không hợp lệ' });
       }

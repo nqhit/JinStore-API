@@ -55,7 +55,7 @@ const authController = {
       });
 
       const user = await newUser.save();
-      res.status(200).json(user);
+      return res.status(200).json(user);
     } catch (error) {
       res.status(500).json({ message: 'Lỗi hệ thống', error: error.message });
     }
@@ -101,7 +101,7 @@ const authController = {
         });
 
         const { password, googleId, ...others } = user;
-        res.status(200).json({ ...others, accessToken, hasPassword: true });
+        return res.status(200).json({ ...others, accessToken, hasPassword: true });
       }
     } catch (error) {
       console.error('❌ Lỗi đăng nhập:', error);

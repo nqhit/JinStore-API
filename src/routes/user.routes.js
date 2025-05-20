@@ -6,7 +6,7 @@ const {
   deleteUser,
   updatePassword,
   changePassword,
-} = require('../controllers/userController');
+} = require('../controllers/user.controller');
 const { verifyToken, verifyTokenAndAdmin } = require('../middlewares/authMiddleware');
 const multer = require('multer');
 const path = require('path');

@@ -15,20 +15,19 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Thay thế phương thức thanh toán cũ bằng tham chiếu đến PaymentMethod
-    paymentMethod: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'PaymentMethod',
-      required: true,
-    },
-
     transactionId: {
       type: String,
       required: function () {
-        // Chỉ yêu cầu transactionId khi không phải COD
-        // Sẽ cần populate paymentMethod để kiểm tra
-        return false; // Sẽ được kiểm tra ở middleware
+        // Chỉ yêu cầu có transactionId khi thanh toán qua VNPay và đã thanh toán thành công
+        return this.status === 'paid' && this._orderPaymentMethod === 'VNPay';
       },
+    },
+
+    // Lưu phương thức thanh toán của đơn hàng để validate
+    _orderPaymentMethod: {
+      type: String,
+      enum: ['VNPay', 'COD'],
+      required: true,
     },
 
     amount: {
@@ -46,32 +45,16 @@ const paymentSchema = new mongoose.Schema(
       type: Date,
     },
 
-    gatewayResponse: {
+    vnpayResponse: {
       type: mongoose.Schema.Types.Mixed,
+      required: function () {
+        return this._orderPaymentMethod === 'VNPay';
+      },
     },
   },
   {
     timestamps: true,
   },
 );
-
-// Middleware để kiểm tra transactionId dựa trên paymentMethod
-paymentSchema.pre('validate', async function (next) {
-  try {
-    if (!this.paymentMethod) return next();
-
-    // Populate paymentMethod để lấy thông tin type
-    await this.populate('paymentMethod', 'type');
-
-    // Nếu không phải COD và không có transactionId
-    if (this.paymentMethod.type !== 'COD' && this.status === 'paid' && !this.transactionId) {
-      this.invalidate('transactionId', 'TransactionID is required for non-COD payments');
-    }
-
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
 
 module.exports = mongoose.model('Payment', paymentSchema);

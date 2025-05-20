@@ -12,9 +12,9 @@ module.exports = {
       if (products.length === 0) {
         return res.status(200).json({ message: 'Không có sản phẩm nào.' });
       }
-      res.status(200).json(products);
+      return res.status(200).json(products);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      return res.status(500).json({ message: error.message });
     }
   },
 
@@ -32,9 +32,9 @@ module.exports = {
         return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
       }
 
-      res.status(200).json(product);
+      return res.status(200).json(product);
     } catch (error) {
-      res.status(500).json({ message: 'Lỗi server', error });
+      return res.status(500).json({ message: 'Lỗi server', error });
     }
   },
 
@@ -160,13 +160,13 @@ module.exports = {
 
       const savedProduct = await newProduct.save();
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: savedProduct,
       });
     } catch (error) {
       console.error('Error creating product:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: error.message,
       });
@@ -255,13 +255,13 @@ module.exports = {
 
       const savedProduct = await newProduct.save();
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: savedProduct,
       });
     } catch (error) {
       console.error('Lỗi server:', error);
-      res.status(500).json({ message: 'Lỗi server', error });
+      return res.status(500).json({ message: 'Lỗi server', error });
     }
   },
 
@@ -282,10 +282,10 @@ module.exports = {
         }
       }
       await Product.findByIdAndDelete(id);
-      res.status(200).json({ message: 'Product deleted successfully' });
+      return res.status(200).json({ message: 'Product deleted successfully' });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: 'Internal server error' });
+      return res.status(500).json({ message: 'Internal server error' });
     }
   },
 };

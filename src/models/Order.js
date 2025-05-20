@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 // Schema cho từng sản phẩm trong đơn hàng
 const orderItemSchema = new mongoose.Schema(
   {
+    //COMMENT: Tên sản phẩm tại thời điểm mua
     name: {
       type: String,
       required: true,
@@ -12,10 +13,16 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+    //COMMENT: Giá tại thời điểm mua
     price: {
       type: Number,
       required: true,
       min: 0,
+    },
+    _idProduct: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
     },
   },
   { _id: false },
@@ -41,19 +48,13 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Thay thế phương thức thanh toán cũ bằng tham chiếu đến PaymentMethod
     paymentMethod: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'PaymentMethod',
+      type: String,
+      enum: ['VNPay', 'COD'],
       required: true,
     },
 
-    payment: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Payment',
-    },
-
-    totalPrice: {
+    totalAmount: {
       type: Number,
       required: true,
       min: 0,
@@ -66,6 +67,7 @@ const orderSchema = new mongoose.Schema(
 
     paidAt: {
       type: Date,
+      default: Date.now,
     },
 
     status: {
@@ -83,14 +85,4 @@ const orderSchema = new mongoose.Schema(
     timestamps: true, // createdAt và updatedAt tự động
   },
 );
-
-// Tính tổng tiền nếu chưa có
-orderSchema.pre('save', function (next) {
-  if (!this.isModified('orderItems') && this.totalPrice) return next();
-
-  const itemsTotal = this.orderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  this.totalPrice = itemsTotal;
-  next();
-});
-
 module.exports = mongoose.model('Order', orderSchema);

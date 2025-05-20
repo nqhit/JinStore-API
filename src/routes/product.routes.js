@@ -11,7 +11,7 @@ const {
   createProduct,
   editProduct,
   deleteProduct,
-} = require('../controllers/productController');
+} = require('../controllers/product.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 // Configure multer for file uploads

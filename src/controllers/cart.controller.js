@@ -39,7 +39,7 @@ const findOrCreateCart = async (userId) => {
 const validateProduct = async (productId, quantity) => {
   const product = await Product.findById(productId);
 
-  if (!product) {
+  if (!product || typeof product !== 'object') {
     return { valid: false, message: 'Không tìm thấy sản phẩm' };
   }
 
@@ -76,38 +76,49 @@ module.exports = {
       }
 
       let totalPrice = 0;
-      const cartItems = cart.items
-        .map((item) => {
-          const product = item._idProduct;
-          if (!product) {
-            return null; // Bỏ qua sản phẩm không hợp lệ
-          }
-          const actualPrice = calculateActualPrice(product);
-          const itemTotal = Number((actualPrice * item.quantity).toFixed(2)); // Làm tròn 2 chữ số
-          totalPrice += itemTotal;
+      let cartItems = [];
 
-          const { ...otherProductData } = formatProductData(product);
-          return {
-            ...otherProductData,
-            quantity: item.quantity,
-            total: itemTotal,
-          };
-        })
-        .filter((item) => item !== null); // Lọc bỏ các mục không hợp lệ
+      try {
+        cartItems = cart.items
+          .map((item) => {
+            const product = item._idProduct;
+            if (!product) return null;
 
-      // Thêm return ở đây để tránh tiếp tục thực thi code sau khi response đã được gửi
+            const actualPrice = calculateActualPrice(product);
+            const itemTotal = Number((actualPrice * item.quantity).toFixed(2));
+            totalPrice += itemTotal;
+
+            const { ...otherProductData } = formatProductData(product);
+            return {
+              ...otherProductData,
+              quantity: item.quantity,
+              total: itemTotal,
+            };
+          })
+          .filter((item) => item !== null);
+      } catch (mapError) {
+        console.error('Lỗi trong khi xử lý map cart items:', mapError);
+        return res.status(500).json({
+          success: false,
+          message: 'Lỗi khi xử lý sản phẩm trong giỏ hàng',
+        });
+      }
+
       return res.status(200).json({
         success: true,
         data: cartItems,
         itemCount: cartItems.length,
-        totalPrice: Number(totalPrice.toFixed(2)), // Thêm tổng giá để UI có thể sử dụng
+        totalPrice: Number(totalPrice.toFixed(2)),
       });
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: 'Không thể lấy giỏ hàng',
-        error: error.message,
-      });
+      console.error('Lỗi getCart:', error);
+      if (!res.headersSent) {
+        return res.status(500).json({
+          success: false,
+          message: 'Không thể lấy giỏ hàng',
+          error: error.message,
+        });
+      }
     }
   },
 

@@ -68,9 +68,9 @@ module.exports = {
         });
       }
 
-      res.status(200).json({ message: 'OTP sent successfully' });
+      return res.status(200).json({ message: 'OTP sent successfully' });
     } catch (error) {
-      res.status(500).json({ message: 'Error sending OTP', error: error.message });
+      return res.status(500).json({ message: 'Error sending OTP', error: error.message });
     }
   },
 
@@ -95,9 +95,9 @@ module.exports = {
         { user: user._id },
         { otp: null, otpExpires: null, isEmailVerified: true, isPhoneVerified: false },
       );
-      res.status(200).json({ message: 'OTP verified successfully' });
+      return res.status(200).json({ message: 'OTP verified successfully' });
     } catch (error) {
-      res.status(500).json({ message: 'Error verifying OTP', error: error.message });
+      return res.status(500).json({ message: 'Error verifying OTP', error: error.message });
     }
   },
 };

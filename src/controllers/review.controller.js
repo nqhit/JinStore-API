@@ -38,7 +38,7 @@ const createReview = async (req, res, next) => {
     product.averageRating = totalRating / reviews.length;
     await product.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: review,
     });
@@ -53,7 +53,7 @@ const getProductReviews = async (req, res, next) => {
     const { productId } = req.params;
     const reviews = await Review.find({ product: productId }).populate('user', 'name email').sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: reviews,
     });
@@ -94,7 +94,7 @@ const updateReview = async (req, res, next) => {
     product.averageRating = totalRating / reviews.length;
     await product.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: review,
     });
@@ -132,7 +132,7 @@ const deleteReview = async (req, res, next) => {
     product.averageRating = reviews.length > 0 ? totalRating / reviews.length : 0;
     await product.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Review deleted successfully',
     });
@@ -147,7 +147,7 @@ const getUserReviews = async (req, res, next) => {
     const userId = req.user._id;
     const reviews = await Review.find({ user: userId }).populate('product', 'name images').sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: reviews,
     });
@@ -164,7 +164,7 @@ const getAllReviews = async (req, res, next) => {
       .populate('product', 'name')
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: reviews,
     });

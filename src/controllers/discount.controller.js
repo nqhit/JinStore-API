@@ -1,3 +1,4 @@
+const { isDate } = require('validator');
 const Discount = require('../models/Discount');
 const mongoose = require('mongoose');
 
@@ -9,7 +10,7 @@ module.exports = {
       if (discounts.length === 0) {
         return res.status(200).json([]);
       }
-      res.status(200).json(discounts);
+      return res.status(200).json(discounts);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
@@ -23,7 +24,7 @@ module.exports = {
       if (!discount) {
         return res.status(404).json({ message: 'Discount not found' });
       }
-      res.status(200).json(discount);
+      return res.status(200).json(discount);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
@@ -34,17 +35,38 @@ module.exports = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      const { code, discount, expiration, isActive, quantityLimit } = req.body;
+      const { code, discount, activation, expiration, isActive, quantityLimit } = req.body;
 
       const checkCode = await Discount.findOne({ code: code });
       if (checkCode) {
         return res.status(400).json({ err: 'code', message: 'Mã giảm giá đã tồn tại' });
       }
 
+      if (isNaN(discount)) {
+        return res.status(400).json({ err: 'discount', message: 'Giảm giá phải là số' });
+      }
+      if (quantityLimit && isNaN(quantityLimit)) {
+        return res.status(400).json({ err: 'quantityLimit', message: 'Số lượng tối đa phải là số' });
+      }
+      if (expiration && isDate(expiration)) {
+        return res.status(400).json({ err: 'expiration', message: 'Ngày đến hạn phải là ngày' });
+      }
+      if (activation && isDate(activation)) {
+        return res.status(400).json({ err: 'activation', message: 'Ngày kích hoạt phải là ngày' });
+      }
+
+      if (expiration && activation && new Date(expiration) < new Date(activation)) {
+        return res.status(400).json({
+          err: 'expiration',
+          message: 'Ngày đến hạn phải sau ngày kích hoạt',
+        });
+      }
+
       const newDiscount = new Discount({
         code: code.trim(),
         discount: discount,
-        expiration: expiration || Date.now(),
+        activation: activation || Date.now(),
+        expiration: expiration,
         isActive: isActive || false,
         quantityLimit: quantityLimit || 100,
       });
@@ -52,7 +74,7 @@ module.exports = {
       const savedDiscount = await newDiscount.save({ session });
       await session.commitTransaction();
       session.endSession();
-      res.status(200).json(savedDiscount);
+      return res.status(200).json({ success: true, data: savedDiscount });
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
@@ -93,7 +115,7 @@ module.exports = {
         return res.status(404).json({ message: 'Discount not found' });
       }
 
-      res.status(200).json(discount);
+      return res.status(200).json(discount);
     } catch (error) {
       console.error('Lỗi server:', error);
       res.status(500).json({ message: 'Lỗi server', error: error.message });
@@ -108,7 +130,7 @@ module.exports = {
       if (!discount) {
         return res.status(404).json({ message: 'Discount not found' });
       }
-      res.status(200).json({ message: 'Discount deleted successfully' });
+      return res.status(200).json({ message: 'Discount deleted successfully' });
     } catch (error) {
       console.error('Lỗi server:', error);
       res.status(500).json({ message: 'Lỗi server', error: error.message });
@@ -128,7 +150,7 @@ module.exports = {
       discount.isActive = !discount.isActive;
       await discount.save();
 
-      res.status(200).json(discount);
+      return res.status(200).json(discount);
     } catch (error) {
       console.error('Lỗi khi cập nhật trạng thái:', error);
       res.status(500).json({ message: 'Lỗi server', error: error.message });

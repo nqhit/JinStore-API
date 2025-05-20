@@ -5,7 +5,7 @@ const {
   createCategory,
   updateCategory,
   deleteCategory,
-} = require('../controllers/categoryController');
+} = require('../controllers/category.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
 const multer = require('multer');
 const path = require('path');

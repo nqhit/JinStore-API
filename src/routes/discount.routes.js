@@ -8,7 +8,7 @@ const {
   updateDiscount,
   deleteDiscount,
   toggleDiscountStatus,
-} = require('../controllers/discountController');
+} = require('../controllers/discount.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 // Public routes

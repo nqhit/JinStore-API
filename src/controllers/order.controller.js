@@ -4,28 +4,23 @@ module.exports = {
   //NOTE: [POST] /api/orders - Tạo đơn hàng mới
   createOrder: async (req, res) => {
     try {
-      const { orderItems, shippingAddress, paymentMethod, shippingFee, note } = req.body;
+      const { orderItems, shippingAddress, paymentMethod, totalAmount, note } = req.body;
 
       if (!orderItems || orderItems.length === 0) {
         return res.status(400).json({ message: 'Đơn hàng cần có ít nhất một sản phẩm' });
       }
 
-      // Tính tổng tiền
-      const itemsTotal = orderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-      const totalPrice = itemsTotal + (shippingFee || 0);
-
       const order = new Order({
-        user: req.user._id,
+        _idUser: req.user._id,
         orderItems,
         shippingAddress,
         paymentMethod,
-        shippingFee: shippingFee || 0,
-        totalPrice,
+        totalAmount,
         note,
       });
 
       const createdOrder = await order.save();
-      res.status(201).json(createdOrder);
+      return res.status(201).json({ success: true, data: createdOrder });
     } catch (error) {
       console.error('Lỗi khi tạo đơn hàng:', error);
       res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });

@@ -2,19 +2,18 @@ const express = require('express');
 const router = express.Router();
 
 // Import các route con
-router.use('/auth', require('./authRoutes'));
-router.use('/users', require('./userRoutes'));
-router.use('/addresses', require('./addressRoutes'));
-router.use('/products', require('./productRoutes'));
-router.use('/discounts', require('./discountRoutes'));
-router.use('/categories', require('./categoryRoutes'));
-router.use('/otp', require('./verifyOTPRoutes'));
-router.use('/reviews', require('./reviewRoutes'));
-router.use('/carts', require('./cartRoutes'));
+router.use('/auth', require('./auth.routes'));
+router.use('/users', require('./user.routes'));
+router.use('/addresses', require('./address.routes'));
+router.use('/products', require('./product.routes'));
+router.use('/discounts', require('./discount.routes'));
+router.use('/categories', require('./category.routes'));
+router.use('/otp', require('./verifyOTP.routes'));
+router.use('/reviews', require('./review.routes'));
+router.use('/carts', require('./cart.routes'));
 
 // Nếu cần sau này thì mở lại:
 // router.use('/orders', require('./orderRoutes'));
 // router.use('/payments', require('./paymentRoutes'));
-// router.use('/wishlist', require('./wishlistRoutes'));
 
 module.exports = router;

@@ -1,9 +1,9 @@
 const express = require('express');
 const passport = require('passport');
 require('dotenv').config();
-const authController = require('../controllers/authController');
+const authController = require('../controllers/auth.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
-const socialController = require('../controllers/socialController');
+const socialController = require('../controllers/social.controller');
 
 const router = express.Router();
 

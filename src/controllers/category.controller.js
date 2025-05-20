@@ -28,10 +28,10 @@ module.exports = {
         console.log('📝 First category:', JSON.stringify(categories[0], null, 2));
       }
 
-      res.json(categories);
+      return res.json(categories);
     } catch (error) {
       console.error('❌ Error fetching categories:', error);
-      res.status(500).json({ success: false, message: error.message });
+      return res.status(500).json({ success: false, message: error.message });
     }
   },
 
@@ -46,10 +46,10 @@ module.exports = {
         return res.status(404).json({ message: 'Danh mục không tồn tại' });
       }
 
-      res.status(200).json(category);
+      return res.status(200).json(category);
     } catch (error) {
       console.error('❌ Error fetching category:', error);
-      res.status(500).json({ message: 'Lỗi server', error: error.message });
+      return res.status(500).json({ message: 'Lỗi server', error: error.message });
     }
   },
 
@@ -147,7 +147,7 @@ module.exports = {
 
       const savedCategory = await newCategory.save();
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: savedCategory,
       });
@@ -159,7 +159,7 @@ module.exports = {
           message: 'Danh mục, mã hoặc slug đã tồn tại',
         });
       }
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Có lỗi xảy ra, vui lòng thử lại',
       });
@@ -232,9 +232,9 @@ module.exports = {
       if (status) category.status = status;
 
       await category.save();
-      res.status(200).json({ success: true, data: category });
+      return res.status(200).json({ success: true, data: category });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      return res.status(500).json({ success: false, message: error.message });
     }
   },
 
@@ -259,9 +259,9 @@ module.exports = {
       }
 
       await Category.findByIdAndDelete(id);
-      res.status(200).json({ success: true, message: 'Xóa danh mục thành công.' });
+      return res.status(200).json({ success: true, message: 'Xóa danh mục thành công.' });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Xóa danh mục thất bại!' });
+      return res.status(500).json({ success: false, message: 'Xóa danh mục thất bại!' });
     }
   },
 };

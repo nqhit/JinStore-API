@@ -63,17 +63,17 @@ const googleCallback = async (req, res) => {
       await new RefreshToken({ token: refreshToken, userId }).save();
     }
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: false,
-      path: '/',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-    // res.redirect(`http://localhost:5173/JinStore/social/callback?accessToken=${accessToken}`);
-    res.redirect(`${APP_URL}/login-google/success`);
+    return res
+      .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: false,
+        path: '/',
+        sameSite: 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      })
+      .redirect(`${APP_URL}/login-google/success`);
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
+    return res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };
 

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const addressController = require('../controllers/addressController');
+const addressController = require('../controllers/address.controller');
 const { verifyToken, verifyTokenAndAdmin } = require('../middlewares/authMiddleware');
 
 // Lấy tất cả địa chỉ của một người dùng
 router.get('/user/all', verifyToken, addressController.getAddressesByUser);
 
-router.get('/user/all/:id', verifyToken, addressController.getAddressesByUser);
+router.get('/user/all/:id', verifyTokenAndAdmin, addressController.getAddressesByUser);
 
 // Lấy một địa chỉ cụ thể
 router.get('/:addressId', verifyToken, addressController.getAddress);
