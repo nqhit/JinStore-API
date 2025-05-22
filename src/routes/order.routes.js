@@ -4,6 +4,7 @@ const orderController = require('../controllers/order.controller');
 const { verifyToken, verifyTokenAndAdmin } = require('../middlewares/authMiddleware');
 
 router.post('/create', verifyToken, orderController.createOrder);
-router.get('/status', verifyToken, orderController.getOrdersStatus);
+router.get('', verifyToken, orderController.getOrdersStatus);
+router.get('/:id', verifyToken, orderController.getOrdersStatus);
 
 module.exports = router;

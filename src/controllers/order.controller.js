@@ -61,7 +61,7 @@ module.exports = {
 
   //NOTE: [GET] /api/orders/status - Lấy đơn hàng theo trạng thái
   getOrdersStatus: async (req, res) => {
-    const userId = req.user._id;
+    const userId = req.params.id ?? req.user._id;
     const { status } = req.query; // Đổi từ req.body sang req.query
 
     try {
