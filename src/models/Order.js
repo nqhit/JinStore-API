@@ -50,7 +50,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ['VNPay', 'COD'],
+      enum: ['vnpay', 'cod'],
       required: true,
     },
 
@@ -67,14 +67,14 @@ const orderSchema = new mongoose.Schema(
 
     paidAt: {
       type: Date,
-      default: Date.now,
+      default: null,
     },
 
     status: {
       type: String,
       required: true,
-      enum: ['Chờ xác nhận', 'Đang xử lý', 'Đã giao hàng', 'Đã hủy'],
-      default: 'Chờ xác nhận',
+      enum: ['pending', 'confirmed', 'processing', 'shipping', 'delivered', 'cancelled'],
+      default: 'pending',
     },
 
     note: {

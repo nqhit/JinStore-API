@@ -29,6 +29,10 @@ const ProductSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    countBuy: {
+      type: Number,
+      default: 0,
+    },
     _idCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
@@ -44,10 +48,6 @@ const ProductSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
-    },
-    averageRating: {
-      type: Number,
-      default: 0,
     },
     images: [
       {

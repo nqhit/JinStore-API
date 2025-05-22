@@ -26,7 +26,7 @@ const paymentSchema = new mongoose.Schema(
     // Lưu phương thức thanh toán của đơn hàng để validate
     _orderPaymentMethod: {
       type: String,
-      enum: ['VNPay', 'COD'],
+      enum: ['vnpay', 'cod'],
       required: true,
     },
 

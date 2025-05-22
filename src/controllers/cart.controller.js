@@ -2,20 +2,20 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const mongoose = require('mongoose');
 
-const calculateActualPrice = (product) => {
+const calculateDiscountPrice = (product) => {
   return product.price * (1 - product.discount / 100);
 };
 
 const formatProductData = (product) => {
-  const actualPrice = calculateActualPrice(product);
+  const discountPrice = calculateDiscountPrice(product);
 
   return {
     _id: product._id,
     name: product.name,
     price: product.price,
     discount: product.discount,
+    discountPrice,
     unit: product.unit,
-    actualPrice,
     images: product.images,
   };
 };
@@ -84,15 +84,15 @@ module.exports = {
             const product = item._idProduct;
             if (!product) return null;
 
-            const actualPrice = calculateActualPrice(product);
-            const itemTotal = Number((actualPrice * item.quantity).toFixed(2));
+            const { ...itemProduct } = formatProductData(product);
+
+            const itemTotal = Number((itemProduct.discountPrice * item.quantity).toFixed(2));
             totalPrice += itemTotal;
 
-            const { ...otherProductData } = formatProductData(product);
             return {
-              ...otherProductData,
+              ...itemProduct,
               quantity: item.quantity,
-              total: itemTotal,
+              totalDiscountPrice: itemTotal,
             };
           })
           .filter((item) => item !== null);
@@ -108,7 +108,6 @@ module.exports = {
         success: true,
         data: cartItems,
         itemCount: cartItems.length,
-        totalPrice: Number(totalPrice.toFixed(2)),
       });
     } catch (error) {
       console.error('Lỗi getCart:', error);
