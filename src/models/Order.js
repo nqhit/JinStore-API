@@ -50,6 +50,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
+      lowercase: true,
       enum: ['vnpay', 'cod'],
       required: true,
     },
@@ -72,8 +73,9 @@ const orderSchema = new mongoose.Schema(
 
     status: {
       type: String,
+      lowercase: true,
       required: true,
-      enum: ['pending', 'confirmed', 'processing', 'shipping', 'delivered', 'cancelled'],
+      enum: ['pending', 'paid', 'processing', 'shipping', 'delivered', 'cancelled'],
       default: 'pending',
     },
 

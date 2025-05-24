@@ -87,4 +87,28 @@ module.exports = {
       res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
   },
+
+  //NOTE: [GET] /api/orders/details/:id - Lấy chi tiết đơn hàng theo id của đơn hàng
+  getOrderDetails: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const order = await Order.findById(id)
+        .populate('_idUser', 'name email phone')
+        .populate('orderItems._idProduct', 'name price image');
+
+      if (!order) {
+        return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+      }
+
+      // Kiểm tra quyền truy cập (chỉ admin hoặc người dùng tạo đơn hàng)
+      if (!req.user.isAdmin && order._idUser._id.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Không có quyền truy cập đơn hàng này' });
+      }
+
+      return res.json(order);
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin đơn hàng:', error);
+      res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+  },
 };

@@ -12,8 +12,6 @@ router.use('/otp', require('./verifyOTP.routes'));
 router.use('/reviews', require('./review.routes'));
 router.use('/carts', require('./cart.routes'));
 router.use('/orders', require('./order.routes'));
-
-// Nếu cần sau này thì mở lại:
-// router.use('/payments', require('./paymentRoutes'));
+router.use('/payments', require('./payment.routes'));
 
 module.exports = router;

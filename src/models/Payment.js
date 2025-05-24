@@ -19,7 +19,7 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       required: function () {
         // Chỉ yêu cầu có transactionId khi thanh toán qua VNPay và đã thanh toán thành công
-        return this.status === 'paid' && this._orderPaymentMethod === 'VNPay';
+        return this.status === 'paid' && this._orderPaymentMethod === 'vnpay';
       },
     },
 
@@ -48,7 +48,7 @@ const paymentSchema = new mongoose.Schema(
     vnpayResponse: {
       type: mongoose.Schema.Types.Mixed,
       required: function () {
-        return this._orderPaymentMethod === 'VNPay';
+        return this._orderPaymentMethod === 'vnpay';
       },
     },
   },
