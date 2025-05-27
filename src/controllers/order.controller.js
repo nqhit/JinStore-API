@@ -7,7 +7,7 @@ module.exports = {
   // NOTE: [POST] /api/orders/create - Tạo đơn hàng mới
   createOrder: async (req, res) => {
     try {
-      const { orderItems, shippingAddress, paymentMethod, totalAmount, note, source } = req.body;
+      const { orderItems, shippingAddress, shippingFee, paymentMethod, totalAmount, note, source } = req.body;
       if (!orderItems || orderItems.length === 0) {
         return res.status(400).json({ message: 'Đơn hàng cần có ít nhất một sản phẩm' });
       }
@@ -16,6 +16,7 @@ module.exports = {
         _idUser: req.user._id,
         orderItems,
         shippingAddress,
+        shippingFee,
         paymentMethod: paymentMethod.toLowerCase(),
         totalAmount,
         note,
@@ -52,22 +53,61 @@ module.exports = {
         );
       }
 
-      res.status(201).json({ success: true, data: createdOrder });
+      return res.status(201).json({ success: true, data: createdOrder });
     } catch (error) {
       console.error('Lỗi khi tạo đơn hàng:', error);
-      res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+      return res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
   },
 
-  //NOTE: [GET] /api/orders/status - Lấy đơn hàng theo trạng thái
+  //NOTE:[GET] /api/orders/all - Lấy tất cả đơn hàng
+  getAllOrders: async (req, res) => {
+    const { status } = req.query;
+
+    try {
+      if (req.user.isAdmin === false) {
+        return res.status(403).json({ success: false, message: 'Không có quyền truy cập' });
+      }
+
+      const orders = await Order.find()
+        .populate({
+          path: 'orderItems._idProduct',
+          select: ' images unit discount quantity',
+        })
+        .populate('shippingAddress')
+        .populate({
+          path: '_idUser',
+          select: 'fullname phone email',
+        });
+
+      if (!orders || orders.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy đơn hàng!',
+        });
+      }
+
+      if (status === 'all' || !status) {
+        return res.status(200).json({ success: true, data: orders });
+      }
+
+      const dataOrders = orders.filter((order) => order.status === status);
+      return res.status(200).json({ success: true, data: dataOrders });
+    } catch (error) {
+      console.error('Lỗi khi lấy đơn hàng:', error);
+      return res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+  },
+
+  //NOTE: [GET] /api/orders/status - Lấy đơn hàng theo trạng thái của từng user
   getOrdersStatus: async (req, res) => {
     const userId = req.params.id ?? req.user._id;
-    const { status } = req.query; // Đổi từ req.body sang req.query
+    const { status } = req.query;
 
     try {
       const orders = await Order.find({ _idUser: userId }).populate({
         path: 'orderItems._idProduct',
-        select: 'name price images unit discount quantity',
+        select: 'images unit',
       });
       if (!orders || orders.length === 0) {
         return res.status(404).json({
@@ -111,4 +151,7 @@ module.exports = {
       res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
   },
+
+  // NOTE: [PUT] /api/orders/:id - Cập nhật tràng thái đơn hàng
+  updateOrderStatus: async (req, res) => {},
 };

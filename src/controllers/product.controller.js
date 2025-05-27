@@ -176,7 +176,7 @@ module.exports = {
   //NOTE:Update detail product
   editProduct: async (req, res) => {
     try {
-      const { name, description, price, discount, quantity, _idCategory, isActive, information, imagesToDelete } =
+      const { name, description, price, unit, discount, quantity, _idCategory, isActive, information, imagesToDelete } =
         req.body;
       const { id } = req.params;
       const _product = await Product.findById(id).populate('_idCategory');
@@ -240,20 +240,17 @@ module.exports = {
         }
       }
 
-      const newProduct = new Product({
-        name: trimmedName,
-        description: description || '',
-        price: price || 0,
-        unit: unit || '',
-        discount: discount || 0,
-        quantity: quantity || 0,
-        _idCategory: _idCategory,
-        isActive: true,
-        images: imagesData,
-        information: parsedInformation,
-      });
+      if (name) _product.name = name;
+      if (description) _product.description = description;
+      if (price) _product.price = price;
+      if (unit) _product.unit = unit;
+      if (discount) _product.discount = discount;
+      if (quantity) _product.quantity = quantity;
+      if (_idCategory) _product._idCategory = _idCategory;
+      if (isActive) _product.isActive = isActive;
+      if (information) _product.information = parsedInformation;
 
-      const savedProduct = await newProduct.save();
+      const savedProduct = await _product.save();
 
       return res.status(200).json({
         success: true,
