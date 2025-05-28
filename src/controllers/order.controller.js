@@ -132,10 +132,34 @@ module.exports = {
   getOrderDetails: async (req, res) => {
     try {
       const { id } = req.params;
-      const order = await Order.findById(id)
+      const orders = await Order.findById(id)
         .populate('_idUser', 'name email phone')
-        .populate('orderItems._idProduct', 'name price image');
+        .populate('orderItems._idProduct', 'name image')
+        .populate('shippingAddress');
 
+      if (!orders) {
+        return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+      }
+
+      // Kiểm tra quyền truy cập (chỉ admin hoặc người dùng tạo đơn hàng)
+      if (!req.user.isAdmin && orders._idUser._id.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Không có quyền truy cập đơn hàng này' });
+      }
+
+      return res.status(200).json({ success: true, data: orders });
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin đơn hàng:', error);
+      return res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+  },
+
+  // NOTE: [PUT] /api/orders/:id - Cập nhật tràng thái đơn hàng
+  updateOrderStatus: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const order = await Order.findById(id);
       if (!order) {
         return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
       }
@@ -145,13 +169,13 @@ module.exports = {
         return res.status(403).json({ message: 'Không có quyền truy cập đơn hàng này' });
       }
 
-      return res.json(order);
+      order.status = status;
+      await order.save();
+
+      return res.status(200).json({ success: true, data: order });
     } catch (error) {
-      console.error('Lỗi khi lấy thông tin đơn hàng:', error);
-      res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+      console.error('Lỗi khi cập nhật tràng thái đơn hàng:', error);
+      return res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
   },
-
-  // NOTE: [PUT] /api/orders/:id - Cập nhật tràng thái đơn hàng
-  updateOrderStatus: async (req, res) => {},
 };

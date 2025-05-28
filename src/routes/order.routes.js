@@ -7,5 +7,6 @@ router.post('/create', verifyToken, orderController.createOrder);
 router.get('/my-order', verifyToken, orderController.getOrdersStatus);
 router.get('/user/:id', verifyTokenAndAdmin, orderController.getOrdersStatus);
 router.get('/list', verifyTokenAndAdmin, orderController.getAllOrders);
-
+router.get('/details/:id', verifyToken, orderController.getOrderDetails);
+router.patch('/update-status/:id', verifyTokenAndAdmin, orderController.updateOrderStatus);
 module.exports = router;

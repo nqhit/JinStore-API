@@ -8,6 +8,10 @@ const orderItemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    discount: {
+      type: Number,
+      min:0
+    },
     quantity: {
       type: Number,
       required: true,

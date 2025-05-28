@@ -35,51 +35,81 @@ module.exports = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      const { code, discount, activation, expiration, isActive, quantityLimit } = req.body;
+      const { code, type, value, maxPercent, activation, expiration, minOrderAmount, isActive, quantityLimit } =
+        req.body;
 
-      const checkCode = await Discount.findOne({ code: code });
+      // Kiểm tra code trùng
+      const checkCode = await Discount.findOne({ code: code.trim() });
       if (checkCode) {
         return res.status(400).json({ err: 'code', message: 'Mã giảm giá đã tồn tại' });
       }
 
-      if (isNaN(discount)) {
-        return res.status(400).json({ err: 'discount', message: 'Giảm giá phải là số' });
+      // Validate type
+      if (!['fixed', 'percentage'].includes(type)) {
+        return res.status(400).json({ err: 'type', message: 'Loại giảm giá không hợp lệ' });
       }
+
+      // Validate value
+      if (type === 'fixed' && (value === undefined || isNaN(value))) {
+        return res.status(400).json({ err: 'value', message: 'Giá trị giảm cố định phải là số' });
+      }
+
+      // Validate maxPercent
+      if (type === 'percentage') {
+        if (maxPercent === undefined || isNaN(maxPercent)) {
+          return res.status(400).json({ err: 'maxPercent', message: 'Giá trị phần trăm tối đa phải là số' });
+        }
+        if (maxPercent > 100 || maxPercent < 0) {
+          return res.status(400).json({ err: 'maxPercent', message: 'maxPercent phải nằm trong khoảng 0-100' });
+        }
+      }
+
       if (quantityLimit && isNaN(quantityLimit)) {
-        return res.status(400).json({ err: 'quantityLimit', message: 'Số lượng tối đa phải là số' });
+        return res.status(400).json({ err: 'quantityLimit', message: 'Số lượng tối đa phải là số' });
       }
-      if (expiration && isDate(expiration)) {
-        return res.status(400).json({ err: 'expiration', message: 'Ngày đến hạn phải là ngày' });
+
+      if (minOrderAmount && isNaN(minOrderAmount)) {
+        return res.status(400).json({ err: 'minOrderAmount', message: 'Giá trị đơn hàng tối thiểu phải là số' });
       }
-      if (activation && isDate(activation)) {
-        return res.status(400).json({ err: 'activation', message: 'Ngày kích hoạt phải là ngày' });
+
+      if (activation && isNaN(Date.parse(activation))) {
+        return res.status(400).json({ err: 'activation', message: 'Ngày kích hoạt không hợp lệ' });
+      }
+
+      if (expiration && isNaN(Date.parse(expiration))) {
+        return res.status(400).json({ err: 'expiration', message: 'Ngày hết hạn không hợp lệ' });
       }
 
       if (expiration && activation && new Date(expiration) < new Date(activation)) {
         return res.status(400).json({
           err: 'expiration',
-          message: 'Ngày đến hạn phải sau ngày kích hoạt',
+          message: 'Ngày hết hạn phải sau ngày kích hoạt',
         });
       }
 
+      // Tạo mới mã giảm giá
       const newDiscount = new Discount({
         code: code.trim(),
-        discount: discount,
-        activation: activation || Date.now(),
-        expiration: expiration,
+        type: type.toLowerCase(),
+        value: type === 'fixed' ? value : undefined,
+        maxPercent: type === 'percentage' ? maxPercent : undefined,
+        activation: activation || new Date(),
+        expiration,
         isActive: isActive || false,
+        minOrderAmount: minOrderAmount || 0,
         quantityLimit: quantityLimit || 100,
       });
 
       const savedDiscount = await newDiscount.save({ session });
       await session.commitTransaction();
       session.endSession();
+
       return res.status(200).json({ success: true, data: savedDiscount });
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
 
-      console.error('Lỗi khi thêm mã giảm giá:', error);
+      console.error('Lỗi khi tạo mã giảm giá:', error);
       return res.status(500).json({
         success: false,
         message: 'Đã xảy ra lỗi server',
