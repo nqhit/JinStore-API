@@ -8,14 +8,13 @@ const {
   getUserReviews,
   getAllReviews,
 } = require('../controllers/review.controller');
-const authMiddleware = require('../middlewares/authMiddleware');
+const { verifyToken, verifyTokenAndAdmin } = require('../middlewares/authMiddleware');
 
-router.use(authMiddleware.verifyToken);
+router.post('/create', verifyToken, createReview);
+router.get('/product/:productId', verifyToken, getProductReviews);
 
-router.get('/', getAllReviews);
-router.get('/user', getUserReviews);
-router.get('/product/:productId', getProductReviews);
-router.post('/', createReview);
-router.patch('/update/:reviewId', updateReview);
-router.delete('/delete/:reviewId', deleteReview);
+// router.get('/', getAllReviews);
+// router.get('/user', getUserReviews);
+// router.patch('/update/:reviewId', updateReview);
+// router.delete('/delete/:reviewId', deleteReview);
 module.exports = router;

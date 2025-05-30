@@ -23,6 +23,10 @@ const reviewSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -30,6 +34,6 @@ const reviewSchema = new mongoose.Schema(
 );
 
 // Mỗi user chỉ được review 1 lần cho 1 sản phẩm
-reviewSchema.index({ user: 1, product: 1 }, { unique: true });
+reviewSchema.index({ _idUser: 1, _idProduct: 1 }, { unique: true });
 
 module.exports = mongoose.model('Review', reviewSchema);

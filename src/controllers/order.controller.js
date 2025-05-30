@@ -133,8 +133,8 @@ module.exports = {
     try {
       const { id } = req.params;
       const orders = await Order.findById(id)
-        .populate('_idUser', 'name email phone')
-        .populate('orderItems._idProduct', 'name image')
+        .populate('_idUser', 'fullname email phone')
+        .populate('orderItems._idProduct', 'name images')
         .populate('shippingAddress');
 
       if (!orders) {
@@ -169,6 +169,11 @@ module.exports = {
         return res.status(403).json({ message: 'Không có quyền truy cập đơn hàng này' });
       }
 
+      if (status === 'received') {
+        order.isPaid = true;
+        order.paidAt = new Date();
+      }
+
       order.status = status;
       await order.save();
 
@@ -178,4 +183,26 @@ module.exports = {
       return res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
   },
+
+  // NOTE: [DELETE] /api/orders/delete/:id - Xóa đơn hàng
+  deleteOrder: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ success: false, message: 'ID đơn hàng không hợp lệ' });
+      }
+      if (req.user.isAdmin === false) {
+        return res.status(403).json({ success: false, message: 'Không có quyền truy cập đơn hàng' });
+      }
+      await Order.findByIdAndDelete(id);
+      return res.status(200).json({ success: true, message: 'Xóa đơn hàng thành công!' });
+    } catch (error) {
+      console.error('Lỗi khi xóa đơn hàng:', error);
+      return res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+  },
+
+  refundOrder: async(req, res) => {
+    
+  }
 };

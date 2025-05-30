@@ -21,6 +21,7 @@ app.use((req, res, next) => {
 });
 
 const allowedOrigins = [
+  'http://localhost:8686',
   'http://localhost:5173',
   'http://localhost:3000',
   'https://nqhit.github.io/JinStore/',
