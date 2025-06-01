@@ -40,7 +40,6 @@ const orderSchema = new mongoose.Schema(
     discount: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Discount',
-      required: true,
       default: null,
     },
 
