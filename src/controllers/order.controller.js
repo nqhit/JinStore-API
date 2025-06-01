@@ -202,7 +202,5 @@ module.exports = {
     }
   },
 
-  refundOrder: async(req, res) => {
-    
-  }
+  refundOrder: async (req, res) => {},
 };

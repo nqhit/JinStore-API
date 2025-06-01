@@ -1,5 +1,7 @@
 const Review = require('../models/Review');
 const Product = require('../models/Product');
+const Order = require('../models/Order');
+const { isAbaRouting } = require('validator');
 
 module.exports = {
   //NOTE:  Create a new review
@@ -8,33 +10,56 @@ module.exports = {
       const { productId, rating, comment } = req.body;
       const userId = req.user._id;
 
-      // Check if product exists
+      // Kiểm tra sản phẩm có tồn tại không
       const product = await Product.findById(productId);
       if (!product) {
         return res.status(403).json({ message: 'Sản phẩm không tìm thấy' });
       }
 
-      // Check if user has already reviewed this product
-      const existingReview = await Review.findOne({ _idUser: userId, _idProduct: productId });
+      // Kiểm tra người dùng đã từng đánh giá chưa
+      const existingReview = await Review.findOne({ user: userId, product: productId });
       if (existingReview) {
-        return res.status(400).json({ success: false, message: 'Bạn đã đánh giá sản phẩm này rồi!' });
+        return res.status(400).json({
+          success: false,
+          isBought: true,
+          message: 'Bạn đã đánh giá sản phẩm này rồi!',
+        });
       }
 
-      const review = new Review({
+      // Kiểm tra người dùng đã mua sản phẩm hay chưa
+      const hasPurchased = await Order.exists({
         _idUser: userId,
-        _idProduct: productId,
+        orderItems: {
+          $elemMatch: {
+            _idProduct: productId,
+          },
+        },
+        status: 'received',
+      });
+
+      if (!hasPurchased) {
+        return res.status(400).json({
+          success: false,
+          isBought: false,
+          message: 'Bạn cần mua sản phẩm này trước khi đánh giá!',
+        });
+      }
+
+      // Tạo đánh giá
+      const review = new Review({
+        user: userId,
+        product: productId,
         rating,
         comment,
       });
 
       await review.save();
 
+      // Tính lại điểm trung bình
       const reviews = await Review.find({ product: productId });
-
       const averageRating =
         reviews.length > 0 ? reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length : 0;
 
-      // Cập nhật sản phẩm
       await Product.findByIdAndUpdate(productId, { averageRating });
 
       return res.status(201).json({
@@ -42,15 +67,30 @@ module.exports = {
         data: review,
       });
     } catch (error) {
-      throw error;
+      next(error);
+    }
+  },
+
+  //NOTE: Get review by id
+  getReviewById: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const review = await Review.findById(id);
+
+      return res.status(200).json({
+        success: true,
+        data: review,
+      });
+    } catch (error) {
+      next(error);
     }
   },
 
   //NOTE: Get all reviews for a product
   getProductReviews: async (req, res, next) => {
     try {
-      const { productId } = req.params;
-      const reviews = await Review.find({ product: productId }).populate('user', 'name email').sort({ createdAt: -1 });
+      const { id } = req.params;
+      const reviews = await Review.find({ product: id }).populate('user', 'fullname').sort({ createdAt: -1 });
 
       return res.status(200).json({
         success: true,
@@ -61,113 +101,166 @@ module.exports = {
     }
   },
 
-  // // Update a review
-  // updateReview: async (req, res, next) => {
-  //   try {
-  //     const { reviewId } = req.params;
-  //     const { rating, comment } = req.body;
-  //     const userId = req.user._id;
+  //NOTE: Get all reviews
+  getAllReviews: async (req, res, next) => {
+    try {
+      const reviews = await Review.find()
+        .populate('user', 'fullname email')
+        .populate('product', 'name')
+        .sort({ createdAt: -1 });
 
-  //     const review = await Review.findById(reviewId);
-  //     if (!review) {
-  //       const error = new Error('Review not found');
-  //       error.statusCode = 404;
-  //       throw error;
-  //     }
+      return res.status(200).json({
+        success: true,
+        data: reviews,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 
-  //     // Check if user is the owner of the review
-  //     if (review.user.toString() !== userId.toString()) {
-  //       const error = new Error('You are not authorized to update this review');
-  //       error.statusCode = 403;
-  //       throw error;
-  //     }
+  //NOTE: Delete a review
+  deleteReview: async (req, res, next) => {
+    try {
+      const { reviewId } = req.params;
 
-  //     review.rating = rating;
-  //     review.comment = comment;
-  //     await review.save();
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Chưa xác thực người dùng' });
+      }
 
-  //     // Update product's average rating
-  //     const product = await Product.findById(review.product);
-  //     const reviews = await Review.find({ product: review.product });
-  //     const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-  //     product.averageRating = totalRating / reviews.length;
-  //     await product.save();
+      const userId = req.user._id;
 
-  //     return res.status(200).json({
-  //       success: true,
-  //       data: review,
-  //     });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // },
+      const review = await Review.findById(reviewId);
+      if (!review) {
+        const error = new Error('Review not found');
+        error.statusCode = 404;
+        throw error;
+      }
 
-  // // Delete a review
-  // deleteReview: async (req, res, next) => {
-  //   try {
-  //     const { reviewId } = req.params;
-  //     const userId = req.user._id;
+      // Kiểm tra quyền
+      if (review.user.toString() !== userId.toString() && !req.user.isAdmin) {
+        return res.status(403).json({ success: false, message: 'Bạn không thể xóa đánh giá này!' });
+      }
 
-  //     const review = await Review.findById(reviewId);
-  //     if (!review) {
-  //       const error = new Error('Review not found');
-  //       error.statusCode = 404;
-  //       throw error;
-  //     }
+      await Review.deleteOne({ _id: reviewId });
 
-  //     // Check if user is the owner of the review or an admin
-  //     if (review.user.toString() !== userId.toString() && !req.user.isAdmin) {
-  //       const error = new Error('You are not authorized to delete this review');
-  //       error.statusCode = 403;
-  //       throw error;
-  //     }
+      return res.status(200).json({
+        success: true,
+        message: 'Xóa đánh giá thành công!',
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 
-  //     await review.remove();
+  //NOTE: Update a review
+  updateReview: async (req, res, next) => {
+    try {
+      const { reviewId } = req.params;
+      const { rating, comment } = req.body;
+      const userId = req.user._id;
 
-  //     // Update product's average rating
-  //     const product = await Product.findById(review.product);
-  //     const reviews = await Review.find({ product: review.product });
-  //     const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-  //     product.averageRating = reviews.length > 0 ? totalRating / reviews.length : 0;
-  //     await product.save();
+      // Validation
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'Điểm đánh giá phải từ 1 đến 5 sao',
+        });
+      }
 
-  //     return res.status(200).json({
-  //       success: true,
-  //       message: 'Review deleted successfully',
-  //     });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // },
+      if (!comment || comment.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng nhập nhận xét',
+        });
+      }
 
-  // getUserReviews: async (req, res, next) => {
-  //   try {
-  //     const userId = req.user._id;
-  //     const reviews = await Review.find({ user: userId }).populate('_idProduct', 'name images').sort({ createdAt: -1 });
+      const review = await Review.findById(reviewId);
+      if (!review) {
+        return ré.status(404).json({ success: false, message: 'Đánh giá không tồn tại!' });
+      }
 
-  //     return res.status(200).json({
-  //       success: true,
-  //       data: reviews,
-  //     });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // },
+      // Check if user is the owner of the review
+      if (review.user.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền chỉnh sửa đánh giá này!',
+        });
+      }
 
-  // // Get all reviews
-  // getAllReviews: async (req, res, next) => {
-  //   try {
-  //     const reviews = await Review.find()
-  //       .populate('_idUser', 'fullname email')
-  //       .populate('_idProduct', 'name')
-  //       .sort({ createdAt: -1 });
+      // Store product ID before updating
+      const productId = review.product;
 
-  //     return res.status(200).json({
-  //       success: true,
-  //       data: reviews,
-  //     });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // },
+      // Update review
+      review.rating = parseInt(rating);
+      review.comment = comment.trim();
+      review.updatedAt = new Date();
+      await review.save();
+
+      // Update product's average rating
+      const reviews = await Review.find({ product: productId });
+
+      if (reviews.length > 0) {
+        const totalRating = reviews.reduce((acc, curr) => acc + curr.rating, 0);
+        const averageRating = Math.round((totalRating / reviews.length) * 10) / 10; // Round to 1 decimal place
+
+        await Product.findByIdAndUpdate(productId, {
+          averageRating: averageRating,
+        });
+      } else {
+        // If no reviews left, reset rating
+        await Product.findByIdAndUpdate(productId, {
+          averageRating: 0,
+          totalReviews: 0,
+        });
+      }
+
+      // Populate user info for response
+      const updatedReview = await Review.findById(reviewId).populate('user', 'fullname email');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Cập nhật đánh giá thành công',
+        data: updatedReview,
+      });
+    } catch (error) {
+      console.error('Error updating review:', error);
+      next(error);
+    }
+  },
+
+  togglePublish: async (req, res, next) => {
+    try {
+      const { reviewId } = req.params;
+      const review = await Review.findById(reviewId);
+
+      if (!review) {
+        return res.status(404).json({ success: false, message: 'Đánh giá không tồn tại!' });
+      }
+
+      review.isReport = !review.isReport;
+      await review.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Cập nhật trang thai đánh giá thanh cong',
+        data: review,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getUserReviews: async (req, res, next) => {
+    try {
+      const userId = req.user._id;
+      const reviews = await Review.find({ user: userId }).populate('_idProduct', 'name images').sort({ createdAt: -1 });
+
+      return res.status(200).json({
+        success: true,
+        data: reviews,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

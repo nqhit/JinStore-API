@@ -34,14 +34,18 @@ const authController = {
         return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin.' });
       }
 
-      const userCheck = await _user.findOne({ username: username });
+      // Kiểm tra username và email đồng thời để tối ưu hiệu suất
+      const [userCheck, emailCheck] = await Promise.all([
+        _user.findOne({ username: username }),
+        _user.findOne({ email: email.trim() }),
+      ]);
+
       if (userCheck) {
-        return res.status(400).json({ err: 'username', message: 'username đã được sử dụng.' });
+        return res.status(400).json({ err: 'username', message: 'Username đã được sử dụng.' });
       }
 
-      const emailCheck = await _user.findOne({ email: email });
       if (emailCheck) {
-        return res.status(400).json({ err: 'email', message: 'email đã được sử dụng.' });
+        return res.status(400).json({ err: 'email', message: 'Email đã được sử dụng.' });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -109,40 +113,66 @@ const authController = {
     }
   },
 
-  //NOTE: lấy request Token
+  // NOTE: lấy request Token
+  // NOTE: lấy request Token - FIXED VERSION
   requestRefreshToken: async (req, res) => {
-    const refreshToken = req.cookies.refreshToken;
-    console.log('Received Refresh Token:', refreshToken);
+    try {
+      const refreshToken = req.cookies.refreshToken;
 
-    if (!refreshToken) return res.status(401).json("Your're not authenticated");
-
-    const storedToken = await _refreshToken.findOne({ token: refreshToken });
-    if (!storedToken) return res.status(403).json('Refresh token is not valid');
-
-    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
-      if (err) {
-        console.log(err);
+      if (!refreshToken) {
+        return res.status(401).json({ success: false, message: 'Bạn không có quyền!' });
       }
-      await _refreshToken.deleteOne({ token: refreshToken });
 
-      const newAccessToken = generateToken(user);
-      const newRefreshToken = generateRefreshToken(user);
+      const storedToken = await _refreshToken.findOne({ token: refreshToken });
+      if (!storedToken) {
+        return res.status(403).json('Refresh token không tồn tại!');
+      }
 
-      await _refreshToken.updateOne({ userId: user._id }, { token: newRefreshToken }, { upsert: true });
+      jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
+        if (err) {
+          console.log(err);
+          return res.status(403).json('Token không hợp lệ!');
+        }
 
-      return res
-        .cookie('refreshToken', newRefreshToken, {
-          httpOnly: true,
-          secure: false,
-          path: '/',
-          sameSite: 'strict',
-          maxAge: 30 * 24 * 60 * 60 * 1000,
-        })
-        .status(200)
-        .json({
-          accessToken: newAccessToken,
-        });
-    });
+        try {
+          const newAccessToken = generateToken(user);
+          const newRefreshToken = generateRefreshToken(user);
+
+          // Sử dụng findOneAndUpdate với upsert thay vì delete + create
+          // Điều này tránh race condition và duplicate key error
+          await _refreshToken.findOneAndUpdate(
+            { userId: user._id },
+            {
+              token: newRefreshToken,
+              updatedAt: new Date(),
+            },
+            {
+              upsert: true,
+              new: true,
+            },
+          );
+
+          return res
+            .cookie('refreshToken', newRefreshToken, {
+              httpOnly: true,
+              secure: false,
+              path: '/',
+              sameSite: 'strict',
+              maxAge: 30 * 24 * 60 * 60 * 1000,
+            })
+            .status(200)
+            .json({
+              accessToken: newAccessToken,
+            });
+        } catch (tokenError) {
+          console.error('❌ Lỗi khi tạo token mới:', tokenError);
+          return res.status(500).json({ message: 'Lỗi khi tạo token mới' });
+        }
+      });
+    } catch (error) {
+      console.error('❌ Lỗi refresh token:', error);
+      return res.status(500).json({ message: 'Lỗi hệ thống', error: error.message });
+    }
   },
 
   //NOTE: Logout

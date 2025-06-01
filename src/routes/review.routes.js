@@ -5,16 +5,20 @@ const {
   getProductReviews,
   updateReview,
   deleteReview,
+  getReviewById,
   getUserReviews,
+  togglePublish,
   getAllReviews,
 } = require('../controllers/review.controller');
 const { verifyToken, verifyTokenAndAdmin } = require('../middlewares/authMiddleware');
 
+router.get('/', verifyTokenAndAdmin, getAllReviews);
+router.get('/:id', verifyToken, getReviewById);
 router.post('/create', verifyToken, createReview);
-router.get('/product/:productId', verifyToken, getProductReviews);
+router.get('/product/:id', getProductReviews);
+router.delete('/delete/:reviewId', verifyTokenAndAdmin, deleteReview);
+router.patch('/update/:reviewId', verifyToken, updateReview);
+router.patch('/publish/:reviewId', verifyTokenAndAdmin, togglePublish);
 
-// router.get('/', getAllReviews);
 // router.get('/user', getUserReviews);
-// router.patch('/update/:reviewId', updateReview);
-// router.delete('/delete/:reviewId', deleteReview);
 module.exports = router;

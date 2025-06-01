@@ -3,15 +3,15 @@ const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema(
   {
-    _idUser: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
     },
-    _idProduct: {
+    product: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
       required: true,
+      index: true,
     },
     rating: {
       type: Number,
@@ -23,7 +23,7 @@ const reviewSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    isDeleted: {
+    isReport: {
       type: Boolean,
       default: false,
     },
@@ -32,8 +32,5 @@ const reviewSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-
-// Mỗi user chỉ được review 1 lần cho 1 sản phẩm
-reviewSchema.index({ _idUser: 1, _idProduct: 1 }, { unique: true });
 
 module.exports = mongoose.model('Review', reviewSchema);
