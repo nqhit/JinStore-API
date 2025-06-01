@@ -15,7 +15,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // Public routes
 router.get('/all', getAllDiscounts);
 router.get('/:id', getDiscount);
-router.get('/user/:userId/discounts', authMiddleware.verifyToken, getAllDiscountUser);
+router.get('/by-user/:id', authMiddleware.verifyToken, getAllDiscountUser);
 
 // Protected routes (admin only)
 router.post('/create', authMiddleware.verifyTokenAndAdmin, createDiscount);

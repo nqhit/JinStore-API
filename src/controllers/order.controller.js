@@ -1,13 +1,14 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Cart = require('../models/Cart');
+const Discount = require('../models/Discount');
 const mongoose = require('mongoose');
 
 module.exports = {
   // NOTE: [POST] /api/orders/create - Tạo đơn hàng mới
   createOrder: async (req, res) => {
     try {
-      const { orderItems, shippingAddress, shippingFee, paymentMethod, totalAmount, note, source } = req.body;
+      const { orderItems, shippingAddress, shippingFee, paymentMethod, totalAmount, note, source, discount } = req.body;
       if (!orderItems || orderItems.length === 0) {
         return res.status(400).json({ message: 'Đơn hàng cần có ít nhất một sản phẩm' });
       }
@@ -17,12 +18,23 @@ module.exports = {
         orderItems,
         shippingAddress,
         shippingFee,
+        discount,
         paymentMethod: paymentMethod.toLowerCase(),
         totalAmount,
         note,
       });
 
       const createdOrder = await order.save();
+
+      const discountId = createdOrder.discount;
+      if (discountId) {
+        await Discount.updateOne(
+          { _id: discountId },
+          {
+            $inc: { quantityUsed: 1 },
+          },
+        );
+      }
 
       const orderItem = createdOrder.orderItems.map((item) => ({
         _idProduct: item._idProduct,

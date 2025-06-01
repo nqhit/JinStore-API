@@ -1,5 +1,6 @@
 const { isDate } = require('validator');
 const Discount = require('../models/Discount');
+const Order = require('../models/Order');
 const mongoose = require('mongoose');
 
 module.exports = {
@@ -19,29 +20,60 @@ module.exports = {
   //NOTE: Get all discount by user (chưa sử dụng)
   getAllDiscountUser: async (req, res) => {
     try {
-      const userId = req.params.userId;
+      const userId = req.params.id;
 
-      // Lấy danh sách discountId mà user đã từng sử dụng
-      const usedDiscountIds = await mongoose
-        .model('Order')
-        .find({
-          _idUser: userId,
-          discount: { $ne: null },
-        })
-        .distinct('discount');
+      // Aggregate để lấy thông tin discount và số lần sử dụng
+      const availableDiscounts = await Discount.aggregate([
+        {
+          $match: {
+            isActive: true,
+            activation: { $lte: new Date() },
+            expiration: { $gte: new Date() },
+          },
+        },
+        {
+          $lookup: {
+            from: 'orders',
+            let: { discountId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$discount', '$$discountId'] },
+                      { $eq: ['$_idUser', new mongoose.Types.ObjectId(userId)] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'userUsage',
+          },
+        },
+        {
+          $addFields: {
+            hasBeenUsedByUser: { $gt: [{ $size: '$userUsage' }, 0] },
+          },
+        },
+        {
+          $match: {
+            hasBeenUsedByUser: false,
+            $expr: { $lt: ['$quantityUsed', '$quantityLimit'] },
+          },
+        },
+      ]);
 
-      // Lấy danh sách các mã giảm giá mà user chưa sử dụng
-      const availableDiscounts = await Discount.find({
-        _id: { $nin: usedDiscountIds },
-        isActive: true,
-        activation: { $lte: new Date() },
-        expiration: { $gte: new Date() },
-      }).lean();
-
-      return res.status(200).json({ success: true, data: availableDiscounts });
+      return res.status(200).json({
+        success: true,
+        data: availableDiscounts,
+      });
     } catch (error) {
       console.error('Lỗi khi lấy danh sách discount của user:', error);
-      res.status(500).json({ message: 'Lỗi server', error: error.message });
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi server',
+        error: error.message,
+      });
     }
   },
 
