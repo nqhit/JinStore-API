@@ -16,6 +16,35 @@ module.exports = {
     }
   },
 
+  //NOTE: Get all discount by user (chưa sử dụng)
+  getAllDiscountUser: async (req, res) => {
+    try {
+      const userId = req.params.userId;
+
+      // Lấy danh sách discountId mà user đã từng sử dụng
+      const usedDiscountIds = await mongoose
+        .model('Order')
+        .find({
+          _idUser: userId,
+          discount: { $ne: null },
+        })
+        .distinct('discount');
+
+      // Lấy danh sách các mã giảm giá mà user chưa sử dụng
+      const availableDiscounts = await Discount.find({
+        _id: { $nin: usedDiscountIds },
+        isActive: true,
+        activation: { $lte: new Date() },
+        expiration: { $gte: new Date() },
+      }).lean();
+
+      return res.status(200).json({ success: true, data: availableDiscounts });
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách discount của user:', error);
+      res.status(500).json({ message: 'Lỗi server', error: error.message });
+    }
+  },
+
   //NOTE: Get discount
   getDiscount: async (req, res) => {
     try {

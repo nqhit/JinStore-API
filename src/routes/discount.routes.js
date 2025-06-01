@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
   getAllDiscounts,
+  getAllDiscountUser,
   getDiscount,
   createDiscount,
   updateDiscount,
@@ -14,6 +15,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // Public routes
 router.get('/all', getAllDiscounts);
 router.get('/:id', getDiscount);
+router.get('/user/:userId/discounts', authMiddleware.verifyToken, getAllDiscountUser);
 
 // Protected routes (admin only)
 router.post('/create', authMiddleware.verifyTokenAndAdmin, createDiscount);
