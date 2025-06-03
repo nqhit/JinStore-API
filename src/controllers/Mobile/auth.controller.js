@@ -1,214 +1,179 @@
-const express = require('express');
-const passport = require('passport');
-const mobileAuthController = require('../controllers/mobile.auth.controller');
-const mobileSocialController = require('../controllers/mobile.social.controller');
-const { verifyToken } = require('../middlewares/verifyToken');
+const User = require('../../models/User');
+const RefreshToken = require('../../models/RefreshToken');
+const { generateToken, generateRefreshToken } = require('../../utils/createToken');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const validator = require('validator');
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // cần khai báo GOOGLE_CLIENT_ID trong .env
 
-const router = express.Router();
+const mobileController = {
+  // Đăng ký
+  register: async (req, res) => {
+    try {
+      const { fullname, username, email, password, confirmPassword } = req.body;
 
-// ========== MOBILE AUTH ROUTES ==========
-
-// Đăng ký cho mobile
-router.post('/register', mobileAuthController.registerUser);
-
-// Đăng nhập cho mobile
-router.post('/login', mobileAuthController.loginUser);
-
-// Refresh token cho mobile
-router.post('/refresh-token', mobileAuthController.requestRefreshToken);
-
-// Logout cho mobile
-router.post('/logout', mobileAuthController.userLogout);
-
-// Kiểm tra trạng thái đăng nhập
-router.post('/check-auth', mobileAuthController.checkAuthStatus);
-
-// ========== MOBILE SOCIAL AUTH ROUTES ==========
-
-// Google OAuth cho Mobile - Bước 1: Redirect đến Google
-router.get(
-  '/google',
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    prompt: 'select_account', // Cho phép user chọn tài khoản Google
-  }),
-);
-
-// Google OAuth cho Mobile - Bước 2: Callback từ Google
-router.get(
-  '/google/callback',
-  passport.authenticate('google', {
-    failureRedirect: process.env.MOBILE_URL_V1 + '/auth/google/error',
-    session: false,
-  }),
-  mobileSocialController.googleMobileCallback,
-);
-
-// API để mobile app lấy thông tin user sau khi đăng nhập Google
-router.post('/google/user-info', mobileSocialController.getMobileGoogleUser);
-
-// Liên kết tài khoản Google với tài khoản hiện tại
-router.post('/google/link', verifyToken, mobileSocialController.linkGoogleAccount);
-
-// Hủy liên kết tài khoản Google
-router.post('/google/unlink', verifyToken, mobileSocialController.unlinkGoogleAccount);
-
-// ========== MOBILE USER PROFILE ROUTES ==========
-
-// Lấy thông tin profile
-router.get('/profile', verifyToken, async (req, res) => {
-  try {
-    const User = require('../../models/User');
-    const user = await User.findById(req.user._id).select('-password');
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy người dùng',
-        code: 'USER_NOT_FOUND',
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Lấy thông tin profile thành công',
-      data: user,
-    });
-  } catch (error) {
-    console.error('❌ Get Profile Error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi server',
-      error: error.message,
-      code: 'SYSTEM_ERROR',
-    });
-  }
-});
-
-// Cập nhật profile
-router.put('/profile', verifyToken, async (req, res) => {
-  try {
-    const { fullname, email, avatar } = req.body;
-    const User = require('../../models/User');
-
-    // Kiểm tra email đã tồn tại chưa (nếu thay đổi email)
-    if (email) {
-      const emailExists = await User.findOne({
-        email: email,
-        _id: { $ne: req.user._id },
-      });
-
-      if (emailExists) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email đã được sử dụng',
-          code: 'EMAIL_TAKEN',
-        });
+      if (!fullname || !username || !email || !password || !confirmPassword) {
+        return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin.' });
       }
-    }
 
-    const updateData = {};
-    if (fullname) updateData.fullname = fullname;
-    if (email) updateData.email = email;
-    if (avatar) updateData.avatar = avatar;
-
-    const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, {
-      new: true,
-      runValidators: true,
-    }).select('-password');
-
-    return res.status(200).json({
-      success: true,
-      message: 'Cập nhật profile thành công',
-      data: updatedUser,
-    });
-  } catch (error) {
-    console.error('❌ Update Profile Error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi server',
-      error: error.message,
-      code: 'SYSTEM_ERROR',
-    });
-  }
-});
-
-// Đổi mật khẩu
-router.put('/change-password', verifyToken, async (req, res) => {
-  try {
-    const { currentPassword, newPassword, confirmPassword } = req.body;
-    const bcrypt = require('bcryptjs');
-    const validator = require('validator');
-    const User = require('../../models/User');
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Vui lòng nhập đầy đủ thông tin',
-        code: 'MISSING_FIELDS',
-      });
-    }
-
-    if (newPassword !== confirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mật khẩu mới và xác nhận mật khẩu không khớp',
-        code: 'PASSWORD_MISMATCH',
-      });
-    }
-
-    if (
-      !validator.isStrongPassword(newPassword, {
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-      })
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mật khẩu mới phải có ít nhất 8 ký tự bao gồm chữ thường, in hoa, số',
-        code: 'WEAK_PASSWORD',
-      });
-    }
-
-    const user = await User.findById(req.user._id).select('+password');
-
-    // Kiểm tra mật khẩu hiện tại (chỉ khi user có password - không phải Google user)
-    if (user.password) {
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
-      if (!isCurrentPasswordValid) {
-        return res.status(400).json({
-          success: false,
-          message: 'Mật khẩu hiện tại không đúng',
-          code: 'WRONG_CURRENT_PASSWORD',
-        });
+      if (password !== confirmPassword) {
+        return res.status(400).json({ message: 'Mật khẩu xác nhận không khớp.' });
       }
+
+      if (!validator.isEmail(email)) {
+        return res.status(400).json({ message: 'Email không hợp lệ' });
+      }
+
+      const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email hoặc username đã tồn tại.' });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new User({ fullname, username, email, password: hashedPassword });
+
+      await newUser.save();
+      return res.status(201).json({ message: 'Đăng ký thành công' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi server', error: error.message });
     }
+  },
 
-    // Hash mật khẩu mới
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+  // Đăng nhập
+  login: async (req, res) => {
+    try {
+      const { usernameOrEmail, password } = req.body;
+      if (!usernameOrEmail || !password) {
+        return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin.' });
+      }
 
-    // Cập nhật mật khẩu
-    await User.findByIdAndUpdate(req.user._id, {
-      password: hashedNewPassword,
-      authProvider: user.googleId ? 'both' : 'local',
-    });
+      const user = await User.findOne({
+        $or: [{ email: usernameOrEmail }, { username: usernameOrEmail }],
+      }).select('+password');
 
-    return res.status(200).json({
-      success: true,
-      message: 'Đổi mật khẩu thành công',
-      code: 'PASSWORD_CHANGED',
-    });
-  } catch (error) {
-    console.error('❌ Change Password Error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi server',
-      error: error.message,
-      code: 'SYSTEM_ERROR',
-    });
-  }
-});
+      if (!user) return res.status(401).json({ message: 'Người dùng không tồn tại.' });
 
-module.exports = router;
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ message: 'Sai mật khẩu.' });
+
+      const accessToken = generateToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      await RefreshToken.findOneAndUpdate({ userId: user._id }, { token: refreshToken }, { upsert: true, new: true });
+
+      const { password: pwd, ...others } = user._doc;
+
+      return res.status(200).json({
+        ...others,
+        accessToken,
+        refreshToken,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi server', error: error.message });
+    }
+  },
+
+  // Làm mới token
+  refresh: async (req, res) => {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        return res.status(401).json({ message: 'Không có refresh token.' });
+      }
+
+      const storedToken = await RefreshToken.findOne({ token: refreshToken });
+      if (!storedToken) {
+        return res.status(403).json({ message: 'Không tìm thấy Refresh Token.' }); // Sửa rõ nghĩa
+      }
+
+      jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
+        if (err) {
+          return res.status(403).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
+        }
+
+        const newAccessToken = generateToken(user);
+        const newRefreshToken = generateRefreshToken(user);
+
+        await RefreshToken.findOneAndUpdate(
+          { userId: user._id },
+          { token: newRefreshToken, updatedAt: Date.now() },
+          { upsert: true },
+        );
+
+        return res.status(200).json({
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+        });
+      });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi server khi refresh token', error: error.message });
+    }
+  },
+
+  // Đăng xuất
+  logout: async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ message: 'Thiếu userId' });
+      }
+
+      await RefreshToken.deleteOne({ userId });
+      return res.status(200).json({ message: 'Đăng xuất thành công' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi server', error: error.message });
+    }
+  },
+
+  // Đăng nhập Google từ mobile
+  loginWithGoogle: async (req, res) => {
+    try {
+      const { idToken } = req.body;
+
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      const { sub: googleId, email, name: fullname, picture: avatar } = payload;
+
+      let user = await User.findOne({ googleId });
+      if (!user) {
+        user = await User.findOne({ email });
+        if (user) {
+          user.googleId = googleId;
+          user.authProvider = 'google';
+          await user.save();
+        } else {
+          user = await User.create({
+            googleId,
+            email,
+            fullname,
+            username: email.split('@')[0],
+            avatar,
+            authProvider: 'google',
+          });
+        }
+      }
+
+      const accessToken = generateToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      await RefreshToken.findOneAndUpdate({ userId: user._id }, { token: refreshToken }, { upsert: true });
+
+      const { password, ...others } = user._doc;
+
+      return res.status(200).json({
+        ...others,
+        accessToken,
+        refreshToken,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi Google Login', error: error.message });
+    }
+  },
+};
+
+module.exports = mobileController;
