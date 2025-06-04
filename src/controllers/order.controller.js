@@ -189,6 +189,13 @@ module.exports = {
       order.status = status;
       await order.save();
 
+      const io = req.app.get('io');
+      io.to(order._idUser.toString()).emit('orderStatusChanged', {
+        orderId: order._id,
+        status: order.status,
+        message: `Đơn hàng #${order._id} đã chuyển sang trạng thái: ${status}`,
+      });
+
       return res.status(200).json({ success: true, data: order });
     } catch (error) {
       console.error('Lỗi khi cập nhật tràng thái đơn hàng:', error);

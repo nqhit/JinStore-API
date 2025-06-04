@@ -154,6 +154,12 @@ module.exports = {
       // Save cart
       await cart.save();
 
+      const io = req.app.get('io');
+      io.to(userId.toString()).emit('cartUpdated', {
+        itemCount: cart.items.length,
+        message: 'Giỏ hàng của bạn đã được cập nhật!',
+      });
+
       return res.status(200).json({
         success: true,
         message: 'Đã thêm sản phẩm vào giỏ hàng',
@@ -253,6 +259,12 @@ module.exports = {
       cart.items = cart.items.filter((item) => item._idProduct.toString() !== productId);
 
       await cart.save();
+
+      const io = req.app.get('io');
+      io.to(userId.toString()).emit('cartUpdated', {
+        itemCount: cart.items.length,
+        message: '🛒 Giỏ hàng của bạn đã được cập nhật!',
+      });
 
       return res.status(200).json({
         success: true,
