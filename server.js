@@ -16,18 +16,18 @@ app.set('io', io);
 
 // Bắt sự kiện socket
 io.on('connection', (socket) => {
-  console.log('🔌 Socket connected:', socket.id);
-
   socket.on('joinUser', (userId) => {
-    console.log(`✅ User ${userId} joined room`);
-    socket.join(userId); // Tham gia room theo user
+    socket.join(userId);
+    console.log(`User ${userId} joined room`);
   });
 
-  socket.on('disconnect', () => {
-    console.log('❌ Socket disconnected:', socket.id);
+  // ✅ Thêm event cho admin join admin room
+  socket.on('joinAdmin', (adminId) => {
+    socket.join('admin-room'); // Tất cả admin join chung room
+    socket.join(adminId); // Admin cũng join room cá nhân
+    console.log(`Admin ${adminId} joined admin room`);
   });
 });
-
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

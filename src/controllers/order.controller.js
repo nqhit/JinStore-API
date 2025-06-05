@@ -195,6 +195,12 @@ module.exports = {
         status: order.status,
         message: `Đơn hàng #${order._id} đã chuyển sang trạng thái: ${status}`,
       });
+      // ✅ Emit đến tất cả admin
+      io.to('admin-room').emit('orderStatusChanged', {
+        orderId: order._id,
+        status: order.status,
+        message: `Đơn hàng #${order._id} đã được cập nhật trạng thái: ${status}`,
+      });
 
       return res.status(200).json({ success: true, data: order });
     } catch (error) {
