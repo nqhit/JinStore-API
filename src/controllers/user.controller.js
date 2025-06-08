@@ -247,7 +247,7 @@ module.exports = {
       }
 
       // Kiểm tra xem user có phải là local auth không
-      if (user.authProvider !== 'local') {
+      if (user.authProvider !== 'local' && user.password === null) {
         return res.status(400).json({
           success: false,
           message: `Không thể thay đổi mật khẩu cho tài khoản đăng nhập bằng ${user.authProvider}`,
