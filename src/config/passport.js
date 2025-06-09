@@ -23,15 +23,16 @@ passport.use(
       prompt: 'select_account',
     },
     async (accessToken, refreshToken, profile, done) => {
-      console.log('Google profile:', profile); // 👈 Thêm dòng này để debug
-
       try {
         const user = {
           authProvider: 'google',
           googleId: profile.id,
           fullname: profile.displayName,
-          email: profile.emails?.[0].value, // 👈 Có thể null nếu thiếu scope
-          avatar: profile.photos?.[0].value,
+          email: profile.emails?.[0].value,
+          avatar: {
+            url: profile.photos?.[0].value,
+            publicId: '',
+          },
         };
         return done(null, user);
       } catch (err) {

@@ -11,8 +11,6 @@ const APP_URL = process.env.CLIENT_URL_V1 ?? process.env.MOBILE_URL_V1 ?? proces
 const googleCallback = async (req, res) => {
   try {
     const user = req.user;
-    console.log(user);
-    // Kiểm tra dữ liệu từ Google
     if (!user.googleId) {
       return res.status(400).json({ message: 'Không thể lấy googleId từ Google' });
     }
@@ -26,10 +24,24 @@ const googleCallback = async (req, res) => {
       }
 
       const resultUser = await User.findOne({ email: email });
+      console.log('avatar', user.avatar.url);
 
-      if (resultUser) {
+      if (resultUser && !resultUser.isAdmin) {
         resultUser.authProvider = 'google';
         resultUser.googleId = user.googleId;
+        resultUser.isAdmin = false;
+        if (resultUser.fullname === null) {
+          resultUser.fullname = user.fullname;
+        }
+
+        // Chỉ lưu avatar nếu DB chưa có và Google có avatar
+        if (!resultUser.avatar?.url && user.avatar?.url) {
+          resultUser.avatar = {
+            url: user.avatar.url,
+            publicId: user.avatar.publicId || '',
+          };
+        }
+
         await resultUser.save();
         existingUser = resultUser;
       } else {
@@ -40,6 +52,7 @@ const googleCallback = async (req, res) => {
           googleId: user.googleId,
           fullname: user.fullname,
           email,
+          isAdmin: false,
           avatar: user.avatar || null,
         });
       }
@@ -93,6 +106,7 @@ const loginSuccess = async (req, res) => {
       success: true,
       message: 'Đăng nhập thành công',
       ...others,
+      isAdmin: false,
       accessToken,
       hasPassword: !!password,
     });

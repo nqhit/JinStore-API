@@ -23,11 +23,6 @@ module.exports = {
     try {
       const categories = await Category.find();
 
-      // Log the first category for debugging
-      if (categories.length > 0) {
-        console.log('📝 First category:', JSON.stringify(categories[0], null, 2));
-      }
-
       return res.json(categories);
     } catch (error) {
       console.error('❌ Error fetching categories:', error);
@@ -42,7 +37,6 @@ module.exports = {
 
       const category = await Category.findById(id);
       if (!category) {
-        console.log(`❌ Category not found with ID: ${id}`);
         return res.status(404).json({ message: 'Danh mục không tồn tại' });
       }
 

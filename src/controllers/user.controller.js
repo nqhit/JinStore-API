@@ -88,7 +88,7 @@ module.exports = {
       }
 
       // Kiểm tra quyền, người dùng chỉ có thể cập nhật thông tin của chính họ, trừ khi là admin
-      if (req.user && req.params.id !== req.user._id && !req.user.isAdmin) {
+      if (req.user && id !== req.user._id && !req.user.isAdmin) {
         return res.status(403).json({
           success: false,
           message: 'Bạn không có quyền cập nhật thông tin của người dùng khác',

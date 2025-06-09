@@ -68,12 +68,17 @@ const authController = {
   //NOTE: Đăng nhập
   loginUser: async (req, res) => {
     try {
-      const { usernameOrEmail, password } = req.body;
+      const { usernameOrEmail, password, pathname } = req.body;
 
-      if (usernameOrEmail === '' || password === '') {
-        return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
+      // 1. Validate input
+      if (!usernameOrEmail || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng nhập đầy đủ thông tin',
+        });
       }
 
+      // 2. Find user
       const user = await _user
         .findOne({
           $or: [{ email: usernameOrEmail }, { username: usernameOrEmail }],
@@ -82,39 +87,100 @@ const authController = {
         .lean();
 
       if (!user) {
-        return res.status(401).json({ message: 'Người dùng không tồn tại' });
+        return res.status(401).json({
+          success: false,
+          message: 'Tên đăng nhập hoặc mật khẩu không đúng',
+        });
       }
 
+      // 3. Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin.',
+        });
+      }
+
+      // 4. Check if user has password (not Google-only user)
+      if (!user.password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tài khoản này đăng ký qua Google. Vui lòng đăng nhập bằng Google.',
+        });
+      }
+
+      // 5. Verify password
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        return res.status(400).json({ message: 'SAI MẬT KHẨU' });
-      }
-      if (user.isActive && user && isMatch) {
-        const accessToken = generateToken(user);
-        const refreshToken = generateRefreshToken(user);
-
-        await _refreshToken.updateOne({ userId: user._id }, { token: refreshToken }, { upsert: true });
-
-        // 👉 Set cookie
-        res.cookie('refreshToken', refreshToken, {
-          httpOnly: true,
-          secure: false,
-          path: '/',
-          sameSite: 'strict',
-          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
+        return res.status(401).json({
+          success: false,
+          message: 'Tên đăng nhập hoặc mật khẩu không đúng',
         });
-
-        const { password, googleId, ...others } = user;
-        return res.status(200).json({ ...others, accessToken, hasPassword: true });
       }
+
+      // 6. Check user role and pathname permission
+      const isAdminLogin = pathname === '/admin/login';
+      const isUserLogin = pathname === '/login';
+
+      if (isAdminLogin && !user.isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền truy cập admin',
+        });
+      }
+
+      if (isUserLogin && user.isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Tên đăng nhập hoặc mật khẩu không đúng.',
+        });
+      }
+
+      // 7. Generate tokens
+      const accessToken = generateToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      // 8. Update refresh token in database
+      await _refreshToken.updateOne(
+        { userId: user._id },
+        {
+          token: refreshToken,
+          updatedAt: new Date(),
+        },
+        { upsert: true },
+      );
+
+      // 9. Set cookie
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // true in production
+        path: '/',
+        sameSite: 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
+      });
+
+      // 10. Return success response
+      const { password: userPassword, googleId, ...userData } = user;
+      return res.status(200).json({
+        success: true,
+        message: 'Đăng nhập thành công',
+        data: {
+          ...userData,
+          accessToken,
+          hasPassword: true,
+        },
+      });
     } catch (error) {
       console.error('❌ Lỗi đăng nhập:', error);
-      res.status(500).json({ message: 'Lỗi hệ thống', error: error.message });
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi hệ thống',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      });
     }
   },
 
   // NOTE: lấy request Token
-  // NOTE: lấy request Token - FIXED VERSION
   requestRefreshToken: async (req, res) => {
     try {
       const refreshToken = req.cookies.refreshToken;

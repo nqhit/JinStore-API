@@ -85,4 +85,11 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+UserSchema.pre('save', function (next) {
+  if (this.authProvider === 'google') {
+    this.isAdmin = false;
+  }
+  next();
+});
+
 module.exports = mongoose.model('User', UserSchema);
