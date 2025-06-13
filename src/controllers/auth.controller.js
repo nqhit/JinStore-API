@@ -22,6 +22,11 @@ const authController = {
         return res.status(400).json({ message: 'Email không hợp lệ' });
       }
 
+      const userRegex = /^[\p{L}\s]+$/u;
+      if (!Regex.test(username)) {
+        return res.status(400).json({ message: 'Username không hợp lệ' });
+      }
+
       if (!validator.isStrongPassword(password, { minLength: 8, minLowercase: 1, minUppercase: 1, minNumbers: 1 })) {
         return res.status(400).json({ message: `Mật khẩu ít nhất 8 ký tự bao gồm chữ thường, in hoa, số` });
       }

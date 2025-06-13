@@ -3,6 +3,7 @@ const router = express.Router();
 
 // Import các route con
 router.use('/auth', require('./auth.routes'));
+router.use('/mobile', require('./mobile/auth.routes'));
 router.use('/users', require('./user.routes'));
 router.use('/addresses', require('./address.routes'));
 router.use('/products', require('./product.routes'));
