@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const { OAuth2Client } = require('google-auth-library');
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // cần khai báo GOOGLE_CLIENT_ID trong .env
+const mongoose = require('mongoose');
 
 const mobileController = {
   // Đăng ký
@@ -60,7 +61,9 @@ const mobileController = {
       const accessToken = generateToken(user);
       const refreshToken = generateRefreshToken(user);
 
-      await RefreshToken.findOneAndUpdate({ userId: user._id }, { token: refreshToken }, { upsert: true, new: true });
+      // FIXME: Xóa refresh token cũ trước khi tạo mới
+      await RefreshToken.findOneAndDelete({ userId: user._id });
+      await RefreshToken.create({ userId: user._id, token: refreshToken });
 
       const { password: pwd, ...others } = user._doc;
 
@@ -89,17 +92,17 @@ const mobileController = {
 
       jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
         if (err) {
+          // FIXME: Xóa token không hợp lệ khỏi database
+          await RefreshToken.findOneAndDelete({ token: refreshToken });
           return res.status(403).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
         }
 
         const newAccessToken = generateToken(user);
         const newRefreshToken = generateRefreshToken(user);
 
-        await RefreshToken.findOneAndUpdate(
-          { userId: user._id },
-          { token: newRefreshToken, updatedAt: Date.now() },
-          { upsert: true },
-        );
+        // FIXME: Xóa token không hợp lệ khỏi database
+        await RefreshToken.findOneAndDelete({ token: refreshToken });
+        return res.status(403).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
 
         return res.status(200).json({
           accessToken: newAccessToken,
@@ -161,7 +164,9 @@ const mobileController = {
       const accessToken = generateToken(user);
       const refreshToken = generateRefreshToken(user);
 
-      await RefreshToken.findOneAndUpdate({ userId: user._id }, { token: refreshToken }, { upsert: true });
+      // FIXME: Xóa refresh token cũ trước khi tạo mới
+      await RefreshToken.findOneAndDelete({ userId: user._id });
+      await RefreshToken.create({ userId: user._id, token: refreshToken });
 
       const { password, ...others } = user._doc;
 

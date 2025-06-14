@@ -36,6 +36,7 @@ const ProductSchema = new mongoose.Schema(
     _idCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
+      required: true,
     },
     _idReview: {
       type: mongoose.Schema.Types.ObjectId,
