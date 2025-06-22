@@ -1,12 +1,13 @@
 const app = require('./src/app');
 const http = require('http');
 const { Server } = require('socket.io');
+const getLocalIP = require('./src/utils/ipNetwork');
 
-const server = http.createServer(app); // tạo HTTP server từ app
+const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173'], // origin frontend
+    origin: '*',
     credentials: true,
   },
 });
@@ -30,6 +31,9 @@ io.on('connection', (socket) => {
 });
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  const ip = getLocalIP();
+  console.log(`Server is running at:`);
+  console.log(`  - Local:   http://localhost:${PORT}/api`);
+  console.log(`  - Network: http://${ip}:${PORT}/api`);
   console.log(`📡 Socket.IO is active`);
 });

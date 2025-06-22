@@ -5,14 +5,32 @@ const path = require('path');
 const os = require('os');
 
 module.exports = {
-  //NOTE: Get all products
+  //NOTE: Get all products page limit
   getAllProducts: async (req, res) => {
     try {
-      const products = await Product.find().populate('_idCategory');
+      let { page, size } = req.query;
+      if (!page) page = 1;
+      if (!size) size = 20;
+
+      const limit = parseInt(size);
+      const skip = (page - 1) * limit;
+
+      const products = await Product.find().limit(limit).skip(skip).populate('_idCategory');
+      const totalProducts = await Product.countDocuments();
       if (products.length === 0) {
         return res.status(200).json({ message: 'Không có sản phẩm nào.' });
       }
-      return res.status(200).json(products);
+      return res.status(200).json({
+        pagination: {
+          page,
+          limit,
+          totalProducts,
+          totalPage: Math.ceil(totalProducts / limit),
+          hasNextPage: page * limit < totalProducts,
+          hasPrevPage: page > 1,
+        },
+        data: products,
+      });
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
