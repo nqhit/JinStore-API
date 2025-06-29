@@ -5,11 +5,31 @@ const getLocalIP = require('./src/utils/ipNetwork');
 
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  'http://localhost:8686',
+  'http://localhost',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://nqhit.github.io/JinStore/',
+  'https://nqhit.github.io',
+];
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: allowedOrigins, // chỉ truyền danh sách domain hợp lệ
     credentials: true,
   },
+});
+
+// Middleware chặn kết nối không hợp lệ
+io.use((socket, next) => {
+  const origin = socket.handshake.headers.origin;
+  if (!origin || allowedOrigins.includes(origin)) {
+    return next();
+  } else {
+    console.log('❌ Blocked Socket.IO origin:', origin);
+    return next(new Error('Not allowed by CORS (socket.io middleware)'));
+  }
 });
 
 // Lưu instance io vào app để dùng trong controller
