@@ -11,14 +11,14 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
+const API_URL = process.env.API_URL;
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL:
-        'http://localhost:1000/api/auth/google/callback' ||
-        'https://jinstore-api.onrender.com/api/auth/google/callback',
+      callbackURL: `${API_URL}/auth/google/callback`,
       scope: ['profile', 'email'],
       prompt: 'select_account',
     },
