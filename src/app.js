@@ -64,8 +64,4 @@ app.use(passport.session());
 app.use('/api', routes);
 app.use(errorHandler);
 
-app.get('/api', (req, res) => {
-  res.status(200).json({ message: '✅ Kết nối thành công với API JinStore (direct)' });
-});
-
 module.exports = app;

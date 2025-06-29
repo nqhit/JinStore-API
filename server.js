@@ -29,11 +29,18 @@ io.on('connection', (socket) => {
     console.log(`Admin ${adminId} joined admin room`);
   });
 });
+
+const ip = getLocalIP();
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  const ip = getLocalIP();
   console.log(`Server is running at:`);
   console.log(`  - Local:   http://localhost:${PORT}/api`);
   console.log(`  - Network: http://${ip}:${PORT}/api`);
   console.log(`📡 Socket.IO is active`);
+});
+app.get(['/api', '/'], (req, res) => {
+  res.send(`Server is running at:<br>
+  - Local: http://localhost:${PORT}/api<br>
+  - Network: http://${ip}:${PORT}/api<br>
+  📡 Socket.IO is active`);
 });
