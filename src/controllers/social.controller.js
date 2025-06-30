@@ -79,9 +79,9 @@ const googleCallback = async (req, res) => {
     return res
       .cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: false,
+        secure: process.env.NODE_ENV === 'production', // Thay đổi này
         path: '/',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict', // Thay đổi này
         maxAge: 30 * 24 * 60 * 60 * 1000,
       })
       .redirect(`${APP_URL}/login-google/success`);
