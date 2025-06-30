@@ -5,7 +5,7 @@ const { generateUsername } = require('../utils/generateUsername');
 const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken'); // Giả sử bạn có model RefreshToken
 
-const APP_URL = process.env.CLIENT_URL_V1 ?? process.env.MOBILE_URL_V1 ?? process.env.CLIENT_URL_V2;
+const APP_URL = process.env.CLIENT_URL_V1;
 
 // Callback từ Google
 const googleCallback = async (req, res) => {

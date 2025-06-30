@@ -20,14 +20,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const allowedOrigins = [
-  'http://localhost:8686',
-  'http://localhost',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://nqhit.github.io/JinStore/',
-  'https://nqhit.github.io',
-];
+const allowedOrigins = ['http://localhost:8686', 'http://localhost', 'http://localhost:5173', 'http://localhost:3000'];
 
 app.use(
   cors({
@@ -53,6 +46,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   }),
