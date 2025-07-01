@@ -5,43 +5,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const { OAuth2Client } = require('google-auth-library');
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // cần khai báo GOOGLE_CLIENT_ID trong .env
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const mongoose = require('mongoose');
 
+// REFACTOR: auth cho mobile và website(truyền type platform để phân biệt 2 nền tảng)
 const mobileController = {
-  // Đăng ký
-  register: async (req, res) => {
-    try {
-      const { fullname, username, email, password, confirmPassword } = req.body;
-
-      if (!fullname || !username || !email || !password || !confirmPassword) {
-        return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin.' });
-      }
-
-      if (password !== confirmPassword) {
-        return res.status(400).json({ message: 'Mật khẩu xác nhận không khớp.' });
-      }
-
-      if (!validator.isEmail(email)) {
-        return res.status(400).json({ message: 'Email không hợp lệ' });
-      }
-
-      const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-      if (existingUser) {
-        return res.status(400).json({ message: 'Email hoặc username đã tồn tại.' });
-      }
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser = new User({ fullname, username, email, password: hashedPassword });
-
-      await newUser.save();
-      return res.status(201).json({ message: 'Đăng ký thành công' });
-    } catch (error) {
-      return res.status(500).json({ message: 'Lỗi server', error: error.message });
-    }
-  },
-
-  // Đăng nhập
   login: async (req, res) => {
     try {
       const { usernameOrEmail, password } = req.body;

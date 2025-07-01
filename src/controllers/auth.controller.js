@@ -22,8 +22,8 @@ const authController = {
         return res.status(400).json({ message: 'Email không hợp lệ' });
       }
 
-      const userRegex = /^[\p{L}\s]+$/u;
-      if (!Regex.test(username)) {
+      const userRegex = /^[a-zA-Z0-9_]+$/;
+      if (!userRegex.test(username)) {
         return res.status(400).json({ message: 'Username không hợp lệ' });
       }
 
