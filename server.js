@@ -4,17 +4,12 @@ const { Server } = require('socket.io');
 const getLocalIP = require('./src/utils/ipNetwork');
 
 const server = http.createServer(app);
+const isProd = process.env.NODE_ENV === 'production';
 
 const allowedOrigins = [
-  'http://localhost:8686',
-  'http://localhost',
-  'http://localhost:5173',
-  'http://localhost:3000',
+  'https://jinstore-api.onrender.com',
   'https://nqhit.github.io',
   'https://nqhit.github.io/JinStore',
-  'https://your-backend.onrender.com',
-  undefined,
-  'null',
   'react-native-app',
 ];
 
@@ -25,16 +20,21 @@ const io = new Server(server, {
   },
 });
 
-// Middleware chặn kết nối không hợp lệ
 io.use((socket, next) => {
   const origin = socket.handshake.headers.origin;
 
+  // ✅ Local dev: cho phép tất cả
+  if (!isProd) {
+    return next();
+  }
+
+  // ✅ Production: kiểm tra nghiêm ngặt
   if (!origin || allowedOrigins.includes(origin) || origin === 'null') {
     return next();
   }
 
-  console.warn('❌ Blocked Socket.IO connection from origin:', origin);
-  return next(new Error('Not allowed by CORS (socket.io middleware)'));
+  console.warn('❌ Blocked Socket.IO origin:', origin);
+  return next(new Error('Not allowed by CORS (Socket.IO middleware)'));
 });
 
 // Lưu instance io vào app để dùng trong controller
