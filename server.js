@@ -10,8 +10,12 @@ const allowedOrigins = [
   'http://localhost',
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://nqhit.github.io/JinStore/',
   'https://nqhit.github.io',
+  'https://nqhit.github.io/JinStore',
+  'https://your-backend.onrender.com',
+  undefined,
+  'null',
+  'react-native-app',
 ];
 
 const io = new Server(server, {
@@ -24,12 +28,13 @@ const io = new Server(server, {
 // Middleware chặn kết nối không hợp lệ
 io.use((socket, next) => {
   const origin = socket.handshake.headers.origin;
-  if (!origin || allowedOrigins.includes(origin)) {
+
+  if (!origin || allowedOrigins.includes(origin) || origin === 'null') {
     return next();
-  } else {
-    console.log('❌ Blocked Socket.IO origin:', origin);
-    return next(new Error('Not allowed by CORS (socket.io middleware)'));
   }
+
+  console.warn('❌ Blocked Socket.IO connection from origin:', origin);
+  return next(new Error('Not allowed by CORS (socket.io middleware)'));
 });
 
 // Lưu instance io vào app để dùng trong controller
