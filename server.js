@@ -33,10 +33,9 @@ const io = new Server(server, {
     credentials: true,
     methods: ['GET', 'POST'],
   },
-  transports: ['websocket', 'polling'],
+  transports: ['websocket'],
   allowEIO3: true,
   pingTimeout: 60000,
-  pingInterval: 25000,
 });
 
 io.use((socket, next) => {
@@ -69,13 +68,11 @@ app.set('io', io);
 io.on('connection', (socket) => {
   socket.on('joinUser', (userId) => {
     socket.join(userId);
-    socket.emit('joinedUser', { userId, socketId: socket.id });
   });
 
   socket.on('joinAdmin', (adminId) => {
     socket.join('admin-room');
     socket.join(adminId);
-    socket.emit('joinedAdmin', { adminId, socketId: socket.id });
   });
 
   socket.on('test-ping', (data) => {
