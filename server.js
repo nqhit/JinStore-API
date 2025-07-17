@@ -10,6 +10,7 @@ const allowedOrigins = [
   'https://jinstore-api.onrender.com',
   'https://nqhit.github.io',
   'https://nqhit.github.io/JinStore',
+  '*',
   'react-native-app',
 ];
 
@@ -29,6 +30,8 @@ const io = new Server(server, {
         'https://jinstore-api.onrender.com',
         'https://nqhit.github.io',
         'https://nqhit.github.io/JinStore',
+        'react-native-app',
+        '*',
       ];
 
       if (allowedOrigins.includes(origin)) {
