@@ -17,32 +17,7 @@ const allowedOrigins = [
 // ✅ Cấu hình CORS linh hoạt cho React Native và Web
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      if (!isProd) {
-        return callback(null, true);
-      }
-
-      if (
-        !origin ||
-        origin === 'null' ||
-        origin === 'undefined' ||
-        origin === 'capacitor://localhost' || // Capacitor
-        origin === 'ionic://localhost' || // Ionic
-        origin.startsWith('exp://') || // Expo development
-        origin.startsWith('exps://') || // Expo secure
-        origin.startsWith('file://') || // Local file
-        origin.includes('expo.dev') || // Expo web
-        origin.includes('expo.io')
-      ) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error('Not allowed by CORS'));
-    },
+    origin: '*',
     credentials: true,
   },
   allowUpgrades: true,
@@ -51,7 +26,6 @@ const io = new Server(server, {
 
 io.use((socket, next) => {
   const origin = socket.handshake.headers.origin;
-  const userAgent = socket.handshake.headers['user-agent'];
 
   if (!isProd) {
     console.log('🔧 Dev mode - allowing all connections');
