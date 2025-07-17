@@ -17,7 +17,7 @@ const allowedOrigins = [
 // ✅ Cấu hình CORS linh hoạt cho React Native và Web
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: allowedOrigins,
     credentials: true,
   },
   allowUpgrades: true,
