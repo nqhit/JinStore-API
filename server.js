@@ -11,13 +11,14 @@ const allowedOrigins = [
   'https://jinstore-api.onrender.com',
   'https://nqhit.github.io',
   'https://nqhit.github.io/JinStore',
-  'http://localhost:5173/',
+  'http://localhost:5173',
 ];
 
 // ✅ Cấu hình CORS linh hoạt cho React Native và Web
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: isProd ? allowedOrigins : true, // Dev mode: allow all
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },
   allowUpgrades: true,
