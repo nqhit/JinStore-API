@@ -94,3 +94,30 @@ const res = await axios.get(`${API_URL}/auth/login/success`, {
 1. Kiểm tra origin trong logs
 2. Đảm bảo localhost ports được thêm vào allowedOrigins
 3. Kiểm tra `credentials: true` trong CORS config
+
+### Lỗi "Request header field token is not allowed":
+
+1. **Kiểm tra logs trên Render** để xem preflight requests
+2. **Đảm bảo header 'token' được cho phép** trong CORS config
+3. **Kiểm tra frontend** có gửi đúng format: `token: Bearer ${accessToken}`
+4. **Test với Postman** để xác nhận API hoạt động
+
+### Debug CORS:
+
+1. **Kiểm tra browser console** để xem lỗi chi tiết
+2. **Kiểm tra Network tab** trong DevTools
+3. **Xem logs trên Render** để thấy preflight requests
+4. **Test debug route**: `GET https://your-backend-domain.onrender.com/api/auth/debug`
+
+### Common CORS Headers được cho phép:
+
+- `Content-Type`
+- `Authorization`
+- `X-Requested-With`
+- `token`
+- `x-access-token`
+- `x-refresh-token`
+- `Accept`
+- `Origin`
+- `Cache-Control`
+- `X-File-Name`
