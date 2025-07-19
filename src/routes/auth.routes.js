@@ -13,6 +13,7 @@ router.post('/refresh', authController.requestRefreshToken);
 router.post('/logout', authMiddleware.verifyToken, authController.userLogout);
 
 router.get('/login/success', socialController.loginSuccess);
+router.get('/debug', socialController.debugCookies); // Route debug
 
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 

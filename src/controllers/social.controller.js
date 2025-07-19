@@ -83,10 +83,11 @@ const googleCallback = async (req, res) => {
     return res
       .cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: false,
+        secure: process.env.NODE_ENV === 'production' && process.env.SECURE_COOKIES !== 'false',
         path: '/',
-        sameSite: 'lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
       })
       .redirect(`${APP_URL}/login-google/success`);
   } catch (error) {
@@ -208,7 +209,43 @@ const loginSuccess = async (req, res) => {
   }
 };
 
+const debugCookies = async (req, res) => {
+  try {
+    const debugInfo = {
+      cookies: req.cookies,
+      session: req.session,
+      user: req.user,
+      headers: {
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        'user-agent': req.headers['user-agent'],
+      },
+      env: {
+        NODE_ENV: process.env.NODE_ENV,
+        SECURE_COOKIES: process.env.SECURE_COOKIES,
+        COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
+      },
+    };
+
+    console.log('Debug info:', JSON.stringify(debugInfo, null, 2));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Debug info',
+      data: debugInfo,
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Debug error',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   googleCallback,
   loginSuccess,
+  debugCookies,
 };

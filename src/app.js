@@ -20,36 +20,63 @@ app.use((req, res, next) => {
   next();
 });
 
-const allowedOrigins = ['http://localhost:8686', 'http://localhost', 'http://localhost:5173', 'http://localhost:3000'];
+// CORS configuration cho production
+const allowedOrigins = [
+  'http://localhost:8686',
+  'http://localhost',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:8686',
+  'https://your-frontend-domain.onrender.com', // Thay bằng domain thực tế của bạn
+  'https://your-frontend-domain.vercel.app', // Thay bằng domain thực tế của bạn
+  process.env.CLIENT_URL_V1, // Từ environment variable
+  process.env.CLIENT_URL_V2, // Từ environment variable
+].filter(Boolean); // Loại bỏ các giá trị undefined
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Cho phép requests không có origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.log('❌ Blocked CORS origin:', origin);
+        console.log('✅ Allowed origins:', allowedOrigins);
         callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   }),
 );
 
 app.use(express.json());
 app.use(cookieParser());
 
+// Session configuration cho production
+const isProduction = process.env.NODE_ENV === 'production';
+const isSecure = isProduction && process.env.SECURE_COOKIES !== 'false';
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
+      secure: isSecure,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
       httpOnly: true,
+      domain: isProduction ? process.env.COOKIE_DOMAIN : undefined,
     },
+    name: 'sessionId', // Tên cookie session
   }),
 );
 
