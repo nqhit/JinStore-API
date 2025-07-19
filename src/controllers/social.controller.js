@@ -97,10 +97,8 @@ const googleCallback = async (req, res) => {
 
 const loginSuccess = async (req, res) => {
   try {
-    // Kiểm tra session hoặc cookies
     if (!req.user && !req.session?.user) {
-      // Thử lấy từ refresh token trong cookies
-      const refreshToken = req.cookies?.refreshToken;
+      const refreshToken = req.cookies?.refreshToken ?? req.user?.refreshToken;
 
       if (!refreshToken) {
         return res.status(401).json({
