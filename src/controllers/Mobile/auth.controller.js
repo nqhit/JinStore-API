@@ -29,9 +29,17 @@ const mobileController = {
       const accessToken = generateToken(user);
       const refreshToken = generateRefreshToken(user);
 
-      // FIXME: Xóa refresh token cũ trước khi tạo mới
-      await RefreshToken.findOneAndDelete({ userId: user._id });
-      await RefreshToken.create({ userId: user._id, token: refreshToken });
+      await RefreshToken.findOneAndUpdate(
+        { userId: user._id },
+        {
+          token: refreshToken,
+          updatedAt: new Date(),
+        },
+        {
+          upsert: true,
+          new: true,
+        },
+      );
 
       const { password: pwd, ...others } = user._doc;
 
@@ -60,7 +68,6 @@ const mobileController = {
 
       jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
         if (err) {
-          // FIXME: Xóa token không hợp lệ khỏi database
           await RefreshToken.findOneAndDelete({ token: refreshToken });
           return res.status(403).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
         }
