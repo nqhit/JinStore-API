@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const { generateRefreshToken, generateToken } = require('../utils/createToken');
 const { generateUsername } = require('../utils/generateUsername');
 const User = require('../models/User');
-const RefreshToken = require('../models/RefreshToken'); // Giả sử bạn có model RefreshToken
 
 const APP_URL = process.env.CLIENT_URL_V1;
 
@@ -65,20 +64,6 @@ const googleCallback = async (req, res) => {
     // Tạo access token và refresh token
     const accessToken = generateToken(existingUser);
     const refreshToken = generateRefreshToken(existingUser);
-
-    // Lưu hoặc cập nhật refresh token trong cơ sở dữ liệu
-    const userId = existingUser._id;
-    const userRefreshToken = await RefreshToken.findOne({ userId });
-
-    if (userRefreshToken) {
-      await RefreshToken.findByIdAndUpdate(
-        userRefreshToken._id,
-        { token: refreshToken, updatedAt: Date.now() },
-        { new: true },
-      );
-    } else {
-      await new RefreshToken({ token: refreshToken, userId }).save();
-    }
 
     return res
       .cookie('refreshToken', refreshToken, {

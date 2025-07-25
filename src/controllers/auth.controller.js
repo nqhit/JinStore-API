@@ -1,5 +1,4 @@
 const _user = require('../models/User');
-const _refreshToken = require('../models/RefreshToken');
 const { generateRefreshToken, generateToken } = require('../utils/createToken');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -145,16 +144,6 @@ const authController = {
       const accessToken = generateToken(user);
       const refreshToken = generateRefreshToken(user);
 
-      // 8. Update refresh token in database
-      await _refreshToken.updateOne(
-        { userId: user._id },
-        {
-          token: refreshToken,
-          updatedAt: new Date(),
-        },
-        { upsert: true },
-      );
-
       // 9. Set cookie
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
@@ -194,11 +183,6 @@ const authController = {
         return res.status(401).json({ success: false, message: 'Bạn không có quyền!' });
       }
 
-      const storedToken = await _refreshToken.findOne({ token: refreshToken });
-      if (!storedToken) {
-        return res.status(403).json('Refresh token không tồn tại!');
-      }
-
       jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
         if (err) {
           console.log(err);
@@ -208,20 +192,6 @@ const authController = {
         try {
           const newAccessToken = generateToken(user);
           const newRefreshToken = generateRefreshToken(user);
-
-          // Sử dụng findOneAndUpdate với upsert thay vì delete + create
-          // Điều này tránh race condition và duplicate key error
-          await _refreshToken.findOneAndUpdate(
-            { userId: user._id },
-            {
-              token: newRefreshToken,
-              updatedAt: new Date(),
-            },
-            {
-              upsert: true,
-              new: true,
-            },
-          );
 
           return res
             .cookie('refreshToken', newRefreshToken, {
@@ -254,10 +224,6 @@ const authController = {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
-      // Xóa refreshToken từ database
-      await _refreshToken.deleteOne({ userId: id });
-
-      // Xóa cookie và gửi response
       return res.clearCookie('refreshToken').status(200).json({
         success: true,
         message: 'Đăng xuất thành công!',

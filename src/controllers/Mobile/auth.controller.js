@@ -1,5 +1,4 @@
 const User = require('../../models/User');
-const RefreshToken = require('../../models/RefreshToken');
 const { generateToken, generateRefreshToken } = require('../../utils/createToken');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -29,18 +28,6 @@ const mobileController = {
       const accessToken = generateToken(user);
       const refreshToken = generateRefreshToken(user);
 
-      await RefreshToken.findOneAndUpdate(
-        { userId: user._id },
-        {
-          token: refreshToken,
-          updatedAt: new Date(),
-        },
-        {
-          upsert: true,
-          new: true,
-        },
-      );
-
       const { password: pwd, ...others } = user._doc;
 
       return res.status(200).json({
@@ -62,7 +49,6 @@ const mobileController = {
       }
       jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
         if (err) {
-          await RefreshToken.findOneAndDelete({ token: refreshToken });
           return res.status(403).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
         }
 
@@ -87,7 +73,6 @@ const mobileController = {
         return res.status(400).json({ message: 'Thiếu userId' });
       }
 
-      await RefreshToken.deleteOne({ userId });
       return res.status(200).json({ success: true, message: 'Đăng xuất thành công' });
     } catch (error) {
       return res.status(500).json({ message: 'Lỗi server', error: error.message });
@@ -128,10 +113,6 @@ const mobileController = {
 
       const accessToken = generateToken(user);
       const refreshToken = generateRefreshToken(user);
-
-      // FIXME: Xóa refresh token cũ trước khi tạo mới
-      await RefreshToken.findOneAndDelete({ userId: user._id });
-      await RefreshToken.create({ userId: user._id, token: refreshToken });
 
       const { password, ...others } = user._doc;
 
