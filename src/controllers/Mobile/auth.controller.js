@@ -60,12 +60,6 @@ const mobileController = {
       if (!refreshToken) {
         return res.status(401).json({ message: 'Không có refresh token.' });
       }
-
-      const storedToken = await RefreshToken.findOne({ token: refreshToken });
-      if (!storedToken) {
-        return res.status(403).json({ message: 'Không tìm thấy Refresh Token.' });
-      }
-
       jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
         if (err) {
           await RefreshToken.findOneAndDelete({ token: refreshToken });
@@ -74,18 +68,6 @@ const mobileController = {
 
         const newAccessToken = generateToken(user);
         const newRefreshToken = generateRefreshToken(user);
-
-        await RefreshToken.findOneAndUpdate(
-          { userId: user._id },
-          {
-            token: newRefreshToken,
-            updatedAt: new Date(),
-          },
-          {
-            upsert: true,
-            new: true,
-          },
-        );
 
         return res.status(200).json({
           accessToken: newAccessToken,
